@@ -112,7 +112,8 @@ pub fn render_digit(num: &str, border: Borders) -> Paragraph<'_> {
     res
 }
 
-
+// TODO not only timer, also __stop watch__
+// TODO Yet one more feature, different style of clock using `tab` feature
 pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     let layout = Layout::new(
         Direction::Horizontal,
@@ -125,8 +126,15 @@ pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    let time_left = app.timer.saturating_sub(app.start_time.elapsed()).as_secs();
-    let (d1, d2, d3, d4) = time_convert(time_left);
+    // TODO timer is not start
+    let (d1, d2, d3, d4) = match app.start_time{
+        Some(start_time) => {
+            let time_left = app.timer.timer.saturating_sub(start_time.elapsed()).as_secs();
+            time_convert(time_left)
+        }
+        None => (ZERO, ZERO, ZERO, ZERO)
+    };
+
     render_clock_digit(frame, layout[0], d1, 0);
 
     render_clock_digit(frame, layout[1], d2, 1);
