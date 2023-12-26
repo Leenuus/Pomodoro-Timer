@@ -1,5 +1,7 @@
-use ratatui::{prelude::*, widgets::*};
+use core::panic;
+
 use crate::App;
+use ratatui::{prelude::*, widgets::*};
 
 pub const ZERO: &str = " 0000
 00  00
@@ -96,17 +98,15 @@ pub fn get_digit(num: u64) -> &'static str {
     }
 }
 
-
 pub fn render_digit(num: &str, border: Borders) -> Paragraph<'_> {
+    // FIXME ascii art digit dont display as expected
     let num: Vec<_> = num.lines().collect();
-    // #ba4949
     let text: Vec<_> = num.iter().map(|&line| Line::from(line)).collect();
     // TODO colorscheme design
     // let red = Color::Rgb(0xba, 0x49, 0x49);
     let res = Paragraph::new(text)
         .block(Block::new().borders(border))
         .style(Style::default())
-        // TODO fix alignment misprint digits
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true });
     res
@@ -126,13 +126,16 @@ pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    // TODO timer is not start
-    let (d1, d2, d3, d4) = match app.start_time{
-        Some(start_time) => {
-            let time_left = app.timer.timer.saturating_sub(start_time.elapsed()).as_secs();
-            time_convert(time_left)
-        }
-        None => (ZERO, ZERO, ZERO, ZERO)
+    let time = match app.state{
+        crate::State::Pomodoro => app.timer.timer,
+        crate::State::LongBreak => app.timer.long_break,
+        crate::State::ShortBreak => app.timer.short_break
+    };
+    let (d1, d2, d3, d4) = match (app.start_time, app.time_left) {
+        (_, Some(time_left)) => time_convert(time_left.as_secs()),
+        (None, None) => time_convert(time.as_secs()),
+        _ => unreachable!("Bad logic rendering digit clock")
+
     };
 
     render_clock_digit(frame, layout[0], d1, 0);
@@ -184,4 +187,3 @@ pub fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u
         .style(Style::default());
     frame.render_widget(b2, layout1[2]);
 }
-

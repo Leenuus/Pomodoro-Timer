@@ -2,6 +2,7 @@ use core::panic;
 // TODO Wrap and trim in ratatui
 use std::{
     io::{self, stdout},
+    thread::sleep,
     time::{Duration, Instant},
 };
 
@@ -15,10 +16,36 @@ use ratatui::{prelude::*, widgets::*};
 pub mod digits_clock;
 use crate::digits_clock::*;
 
+const SECS_PER_MINUTE: u64 = 60;
+const POMODORO_LENGTH: u64 = 25;
+const SHORT_BREAK_LENGTH: u64 = 5;
+const LONG_BREAK_LENGTH: u64 = 15;
+const FPS: u64 = 30;
+
+/// State(whether the timer is up)
+pub enum State {
+    Pomodoro,
+    ShortBreak,
+    LongBreak,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Pomodoro
+    }
+}
+
+#[derive(Default)]
 pub struct App {
+    // this field to store user settings
     timer: Timer,
-    start_time: Option<Instant>,
+    // this field is for echoing user input
     user_input: Input,
+    //  these 3 fields are for keeping track of the running timer state
+    start_time: Option<Instant>,
+    time_left: Option<Duration>,
+    state: State,
+    // this field let user choose tabs
     tab_selected: usize,
 }
 
@@ -31,7 +58,6 @@ pub struct Input {
 
 impl Input {
     pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
-        // TODO return saturated user input
         let (s1, s2, s3) = match self.field_selected {
             0 => (
                 ">> Timer Length: ",
@@ -87,9 +113,9 @@ impl Input {
 impl Default for Input {
     fn default() -> Self {
         Self {
-            timer: String::from("25"),
-            short_break: String::from("25"),
-            long_break: String::from("25"),
+            timer: POMODORO_LENGTH.to_string(),
+            short_break: SHORT_BREAK_LENGTH.to_string(),
+            long_break: LONG_BREAK_LENGTH.to_string(),
             field_selected: 0,
         }
     }
@@ -104,9 +130,10 @@ pub struct Timer {
 impl Default for Timer {
     fn default() -> Self {
         Timer {
-            timer: Duration::from_secs(60 * 25),
-            short_break: Duration::from_secs(60 * 25),
-            long_break: Duration::from_secs(60 * 25),
+            timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
+            // timer: Duration::from_secs(3),
+            short_break: Duration::from_secs(SECS_PER_MINUTE * SHORT_BREAK_LENGTH),
+            long_break: Duration::from_secs(SECS_PER_MINUTE * LONG_BREAK_LENGTH),
         }
     }
 }
@@ -120,47 +147,70 @@ impl App {
         }
     }
 
+    pub fn pause_timer(&mut self) {
+        todo!()
+    }
+
+    // FIXME strange overflow
     pub fn launch_timer(&mut self) {
-        match self.start_time {
-            Some(_) => {}
-            None => {
+        let time = match self.state {
+            State::Pomodoro => self.timer.timer,
+            State::LongBreak => self.timer.long_break,
+            State::ShortBreak => self.timer.short_break,
+        };
+        match (self.start_time, self.time_left) {
+            (Some(start_time), Some(time_left)) => {
+                // if the timer is already running
+                // we update `time_left`
+                // the timer is already running
+                // FIXME sub overflow
+                self.time_left = Some(time_left - start_time.elapsed());
+            }
+            (None, None) => {
+                // if the timer is not up, then we launch it
+                // we record the uptime and set time_left to timer's duration
+                // the timer is not running before
+                self.start_time = Some(Instant::now());
+                self.time_left = Some(time);
+            }
+            (None, Some(_)) => {
+                // when we pause the timer
+                // we set the start_time back to None,
+                // compute `time_left` and store it
+                // when we launch from pause state again, we just create a new start_time
                 self.start_time = Some(Instant::now());
             }
+            _ => unreachable!("Bad logic if this is reached"),
+        }
+    }
+
+    pub fn update_timer(&mut self) {
+        match self.state {
+            // FIXME after finishing one timer
+            // `start_time` becomes Some(_) and never get set back
+            _ => {}
         }
     }
 
     pub fn set_timer(&mut self) {
-        self.timer.timer = Duration::from_secs(
-            self.user_input
-                .timer
-                .parse::<u64>()
-                .expect("Fail to parse input")
-                * 60,
-        );
-        self.timer.short_break = Duration::from_secs(
-            self.user_input
-                .short_break
-                .parse::<u64>()
-                .expect("Fail to parse user input")
-                * 60,
-        );
-        self.timer.long_break = Duration::from_secs(
-            self.user_input
-                .long_break
-                .parse::<u64>()
-                .expect("Fail to parse user input")
-                * 60,
-        );
-    }
-}
-
-impl Default for App {
-    fn default() -> Self {
-        App {
-            timer: Timer::default(),
-            start_time: None,
-            user_input: Input::default(),
-            tab_selected: 0,
+        // FIXME when user input length is ZERO
+        // Set timer and user input back to default state
+        match (
+            self.user_input.timer.parse::<u64>(),
+            self.user_input.short_break.parse::<u64>(),
+            self.user_input.long_break.parse::<u64>(),
+        ) {
+            (Ok(timer), Ok(short_break), Ok(long_break)) => {
+                self.timer = Timer {
+                    timer: Duration::from_secs(timer * SECS_PER_MINUTE),
+                    short_break: Duration::from_secs(short_break * SECS_PER_MINUTE),
+                    long_break: Duration::from_secs(long_break * SECS_PER_MINUTE),
+                };
+            }
+            _ => {
+                self.user_input = Input::default();
+                self.timer = Timer::default();
+            }
         }
     }
 }
@@ -170,12 +220,15 @@ fn main() -> io::Result<()> {
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut should_quit = false;
+    const INTERVAL: u64 = 1000 / FPS;
 
     let mut app = App::default(); // initialize App
 
     while !should_quit {
         terminal.draw(|frame| ui(frame, &app))?;
         should_quit = handle_events(&mut app)?;
+        sleep(Duration::from_millis(INTERVAL));
+        // TODO handle timer here
     }
 
     disable_raw_mode()?;
@@ -239,6 +292,12 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             } else if code == 'l' || code == 'h' {
                 app.tab_toggle();
                 Ok(false)
+            } else if code == 'j' {
+                app.user_input.select_next_field();
+                Ok(false)
+            } else if code == 'k' {
+                app.user_input.select_prev_field();
+                Ok(false)
             } else if code == ' ' {
                 app.launch_timer();
                 Ok(false)
@@ -287,38 +346,30 @@ fn render_right_side(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_console(frame: &mut Frame, area: Rect, app: &App) {
-    let d1 = Block::default()
-        .title("Usage")
-        .borders(Borders::ALL)
-        .style(Style::default());
-
     let layout = Layout::new(
         Direction::Horizontal,
         [Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)],
     )
     .split(area);
 
-    frame.render_widget(d1, layout[0]);
-
+    render_usage_prompt(frame, layout[0]);
     render_user_input_fields(frame, layout[1], app);
 }
 
-fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
-    let chunks = Layout::new(
-        Direction::Vertical,
-        [Constraint::Length(1), Constraint::default()],
-    )
-    .split(area);
-    // FIXME no tabs line displayed
-    let tabs = Tabs::new::<Line>(vec!["t1".into(), "t2".into(), "t3".into()])
-        .block(Block::default().borders(Borders::ALL))
-        .highlight_style(Style::default().fg(Color::Yellow))
-        .select(app.tab_selected);
-    frame.render_widget(tabs, chunks[0]);
+fn render_usage_prompt(frame: &mut Frame, area: Rect) {
+    // TODO usage prompt widget: render it with dynamic keymaps
+    // we can generate usage help from keymap
+    let d1 = Block::default()
+        .title("Usage")
+        .borders(Borders::ALL)
+        .style(Style::default());
+    frame.render_widget(d1, area);
+}
 
+fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
     match app.tab_selected {
-        0 => render_settings(frame, chunks[1], app),
-        1 => render_task_manager(frame, chunks[1], app),
+        0 => render_settings(frame, area, app),
+        1 => render_task_manager(frame, area, app),
         _ => panic!("Tab selected index, not implemented"),
     };
 }
@@ -337,7 +388,7 @@ fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
     let ((s1, timer), (s2, short_break), (s3, long_break)) = app.user_input.display();
-    // TODO highlight selected field
+    // TODO Add some padding to this widget
     let text = vec![
         Line::from(vec![
             Span::styled(s1, Style::new().green().italic()),
