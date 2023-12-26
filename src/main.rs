@@ -81,7 +81,6 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut should_quit = false;
 
-    // TODO, how can we keep track of the time
     let timer = Duration::from_secs(60 * 25);
     let start_time = Instant::now();
 
@@ -189,7 +188,6 @@ fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    // TODO get current left time from APP, convert it into corresponding digit string
     let time_left = app.timer.saturating_sub(app.start_time.elapsed()).as_secs();
     let (d1, d2, d3, d4) = time_convert(time_left);
     render_clock_digit(frame, layout[0], d1, 0);
@@ -202,7 +200,6 @@ fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_console(frame: &mut Frame, area: Rect) {
-    // ID 2
     // TODO console
     let d1 = Block::default()
         .title("Console")
