@@ -10,8 +10,8 @@ use crossterm::{
 };
 use ratatui::{prelude::*, widgets::*};
 
-pub mod digits;
-use crate::digits::*;
+pub mod digits_clock;
+use crate::digits_clock::*;
 
 
 struct App {
@@ -137,28 +137,6 @@ fn render_right_side(frame: &mut Frame, area: Rect, app: &App) {
 
 // TODO not only timer, also __stop watch__
 // TODO Yet one more feature, different style of clock using `tab` feature
-fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
-    let layout = Layout::new(
-        Direction::Horizontal,
-        [
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-            Constraint::Ratio(1, 4),
-        ],
-    )
-    .split(area);
-
-    let time_left = app.timer.saturating_sub(app.start_time.elapsed()).as_secs();
-    let (d1, d2, d3, d4) = time_convert(time_left);
-    render_clock_digit(frame, layout[0], d1, 0);
-
-    render_clock_digit(frame, layout[1], d2, 1);
-
-    render_clock_digit(frame, layout[2], d3, 2);
-
-    render_clock_digit(frame, layout[3], d4, 3);
-}
 
 fn render_console(frame: &mut Frame, area: Rect, app: &App) {
     let d1 = Block::default()
@@ -176,48 +154,6 @@ fn render_console(frame: &mut Frame, area: Rect, app: &App) {
 
     render_user_input_fields(frame, layout[1], app);
 }
-
-fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u8) {
-    let (borders_top, borders_bottom, borders_middle) = match index {
-        0 => (
-            Borders::TOP | Borders::LEFT,
-            Borders::BOTTOM | Borders::LEFT,
-            Borders::LEFT,
-        ),
-        x if x == 1 || x == 2 => (Borders::TOP, Borders::BOTTOM, Borders::NONE),
-
-        3 => (
-            Borders::TOP | Borders::RIGHT,
-            Borders::BOTTOM | Borders::RIGHT,
-            Borders::RIGHT,
-        ),
-        _ => {
-            panic!()
-        }
-    };
-
-    let d1 = render_digit(digit, borders_middle);
-
-    let layout1 = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
-        ],
-    )
-    .split(layout);
-    let b1 = Block::default()
-        .borders(borders_top)
-        .style(Style::default());
-    frame.render_widget(b1, layout1[0]);
-    frame.render_widget(d1, layout1[1]);
-    let b2 = Block::default()
-        .borders(borders_bottom)
-        .style(Style::default());
-    frame.render_widget(b2, layout1[2]);
-}
-
 
 fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::new(
