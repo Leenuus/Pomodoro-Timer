@@ -75,17 +75,17 @@ fn handle_key(key: KeyEvent) -> io::Result<bool> {
     Ok(false)
 }
 
-fn digit<'a>(num: &'a str) -> Paragraph<'a> {
+fn render_digit<'a>(num: &'a str, border: Borders) -> Paragraph<'a> {
     let num: Vec<_> = num.lines().collect();
     // #ba4949
     let text: Vec<_> = num.iter().map(|&line| Line::from(line)).collect();
     // TODO colorscheme design
     // let red = Color::Rgb(0xba, 0x49, 0x49);
     let res = Paragraph::new(text)
-        .block(Block::new().title("Pomodoro").borders(Borders::ALL))
-        .style(Style::new().bg(Color::Black).fg(Color::White))
+        .block(Block::new().borders(border))
+        .style(Style::default())
         // TODO fix alignment misprint digits
-        .alignment(Alignment::Left)
+        .alignment(Alignment::Center)
         .wrap(Wrap { trim: true });
     res
 }
@@ -96,13 +96,22 @@ fn ui(frame: &mut Frame) {
         [Constraint::Ratio(1, 4), Constraint::Ratio(3, 4)],
     )
     .split(frame.size());
-
-    // TODO task list
-    let d1 = digit(ZERO);
-    // render task list
-    frame.render_widget(d1, layout[0]);
-    // render digit clock
+    render_task_list(frame, layout[0]);
     render_right_side(frame, layout[1]);
+}
+
+fn render_task_list(frame: &mut Frame, area: Rect) {
+    // TODO TASK List widget
+    let items = ["Item 1", "Item 2", "Item 3"];
+    let list = List::new(items)
+        .block(Block::default().title("Task List").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>")
+        .repeat_highlight_symbol(true)
+        .direction(ListDirection::BottomToTop);
+
+    frame.render_widget(list, area);
 }
 
 fn render_right_side(frame: &mut Frame, area: Rect) {
@@ -118,13 +127,78 @@ fn render_right_side(frame: &mut Frame, area: Rect) {
 }
 
 fn render_digit_clock(frame: &mut Frame, area: Rect) {
-    // TODO digit clock
-    let d1 = digit(ONE);
-    frame.render_widget(d1, area);
+    // TODO Yet one more feature, different style of clock using `tab` feature
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [
+            Constraint::Ratio(1, 4),
+            Constraint::Ratio(1, 4),
+            Constraint::Ratio(1, 4),
+            Constraint::Ratio(1, 4),
+        ],
+    )
+    .split(area);
+
+    render_clock_digit(frame, layout[0], ONE, 0);
+
+    render_clock_digit(frame, layout[1], ONE, 1);
+
+    render_clock_digit(frame, layout[2], ONE, 2);
+
+    render_clock_digit(frame, layout[3], ONE, 3);
 }
 
 fn render_console(frame: &mut Frame, area: Rect) {
+    // ID 2
     // TODO console
-    let d1 = digit(TWO);
+    let d1 = Block::default()
+        .title("Console")
+        .borders(Borders::ALL)
+        .style(Style::default());
     frame.render_widget(d1, area);
+}
+
+fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u8) {
+    let (borders_top, borders_bottom, borders_middle) = match index {
+        0 => (
+            Borders::TOP | Borders::LEFT,
+            Borders::BOTTOM | Borders::LEFT,
+            Borders::LEFT,
+        ),
+        x if x == 1 || x == 2 => (
+            Borders::TOP,
+            Borders::BOTTOM,
+            Borders::NONE,
+        ),
+
+        3 => (
+            Borders::TOP | Borders::RIGHT,
+            Borders::BOTTOM | Borders::RIGHT,
+            Borders::RIGHT
+        ),
+        _ => {
+            panic!()
+        }
+    };
+
+    let d1 = render_digit(digit, borders_middle);
+
+    let layout1 = Layout::new(
+        Direction::Vertical,
+        [
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+        ],
+    )
+    .split(layout);
+    let b1 = Block::default()
+        .borders(borders_top)
+        .style(Style::default());
+    frame.render_widget(b1, layout1[0]);
+    frame.render_widget(d1, layout1[1]);
+    let b2 = Block::default()
+        .borders(borders_bottom)
+        .style(Style::default());
+    frame.render_widget(b2, layout1[2]);
 }
