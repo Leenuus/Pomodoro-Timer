@@ -1,5 +1,7 @@
+use core::panic;
 use std::{
     io::{self, stdout},
+    ops::Add,
     time::{Duration, Instant},
 };
 
@@ -73,6 +75,29 @@ const NINE: &str = " 9999
 struct App {
     timer: Duration,
     start_time: Instant,
+    user_input: Vec<char>,
+    tab_selected: usize,
+}
+
+impl App {
+    pub fn tab_toggle(&mut self) {
+        match self.tab_selected{
+            0 => self.tab_selected = 1,
+            1 => self.tab_selected = 0,
+            _ => panic!("Not implemented Tab")
+        }
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        App {
+            timer: Duration::from_secs(60 * 25),
+            start_time: Instant::now(),
+            user_input: vec![],
+            tab_selected: 0,
+        }
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -81,13 +106,11 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut should_quit = false;
 
-    let timer = Duration::from_secs(60 * 25);
-    let start_time = Instant::now();
+    let mut app = App::default(); // initialize App
 
-    let app = App { timer, start_time };
     while !should_quit {
         terminal.draw(|frame| ui(frame, &app))?;
-        should_quit = handle_events()?;
+        should_quit = handle_events(&mut app)?;
     }
 
     disable_raw_mode()?;
@@ -95,11 +118,11 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn handle_events() -> io::Result<bool> {
+fn handle_events(app: &mut App) -> io::Result<bool> {
     if event::poll(std::time::Duration::from_millis(50))? {
         match event::read()? {
             Event::Key(key) => {
-                return handle_key(key);
+                return handle_key(key, app);
             }
             Event::FocusGained => {}
             Event::FocusLost => {}
@@ -115,10 +138,20 @@ fn handle_events() -> io::Result<bool> {
     Ok(false)
 }
 
-/// handle basic input
-fn handle_key(key: KeyEvent) -> io::Result<bool> {
+// TODO vim like keybindings
+fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
+    //  TODO get user input to set the timer
+    // let buf: Vec<char> = Vec::new();
     if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
         return Ok(true);
+    }
+    if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('h') {
+        app.tab_toggle();
+        return Ok(false);
+    }
+    if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('l') {
+        app.tab_toggle();
+        return Ok(false);
     }
     Ok(false)
 }
@@ -171,7 +204,7 @@ fn render_right_side(frame: &mut Frame, area: Rect, app: &App) {
 
     render_digit_clock(frame, rs[0], app);
 
-    render_console(frame, rs[1]);
+    render_console(frame, rs[1], app);
 }
 
 // TODO not only timer, also __stop watch__
@@ -199,13 +232,21 @@ fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     render_clock_digit(frame, layout[3], d4, 3);
 }
 
-fn render_console(frame: &mut Frame, area: Rect) {
-    // TODO console
+fn render_console(frame: &mut Frame, area: Rect, app: &App) {
     let d1 = Block::default()
-        .title("Console")
+        .title("Usage")
         .borders(Borders::ALL)
         .style(Style::default());
-    frame.render_widget(d1, area);
+
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)],
+    )
+    .split(area);
+
+    frame.render_widget(d1, layout[0]);
+
+    render_user_input_fields(frame, layout[1], app);
 }
 
 fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u8) {
@@ -282,4 +323,47 @@ fn get_digit(num: u64) -> &'static str {
             panic!()
         }
     }
+}
+
+fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
+    let chunks = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(1), Constraint::default()],
+    )
+    .split(area);
+    let tabs = Tabs::new::<Line>(vec!["t1".into(), "t2".into(), "t3".into()])
+        .block(Block::default().borders(Borders::ALL).title("Good"))
+        .highlight_style(Style::default().fg(Color::Yellow))
+        .select(app.tab_selected);
+    frame.render_widget(tabs, chunks[0]);
+
+    match app.tab_selected {
+        0 => render_task_manager(frame, chunks[1], app),
+        1 => render_settings(frame, chunks[1], app),
+        _ => panic!("Tab selected index, not implemented"),
+    };
+}
+
+fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
+    // TODO input field
+    // TODO task name
+    let b = Block::default()
+        .title(app.tab_selected.to_string())
+        .borders(Borders::LEFT | Borders::RIGHT)
+        .border_style(Style::default().fg(Color::White))
+        .border_type(BorderType::Rounded)
+        .style(Style::default().bg(Color::Black));
+    frame.render_widget(b, area);
+}
+
+fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
+    // TODO timer duration
+    // TODO settings module, `timer` `short break` `long break`
+    let b = Block::default()
+        .title(app.tab_selected.to_string())
+        .borders(Borders::LEFT | Borders::RIGHT)
+        .border_style(Style::default().fg(Color::White))
+        .border_type(BorderType::Rounded)
+        .style(Style::default().bg(Color::Black));
+    frame.render_widget(b, area);
 }
