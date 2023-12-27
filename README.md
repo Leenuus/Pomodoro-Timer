@@ -10,9 +10,11 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 - [X] Basic User Interface
 - [X] Timer Controller(Start, Pause, Skip, Break, Long Break)
 - [ ] Task List(Add Task, task specific settings, delete Tasks)
+- [ ] Timer Presets 
 - [ ] Dynamic Keybindings, Vim-like Keybindings
 - [ ] Stop Watch
 - [ ] Store User Settings and Data
+- [ ] Backup and restore user's `settings` and `data`
 
 ### ColorScheme
 
@@ -25,5 +27,4 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 
 ### Advanced Features
 
-- [ ] Export Statistics
-
+- [ ] Generate Reports from using statistics
