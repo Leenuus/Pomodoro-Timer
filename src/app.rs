@@ -50,7 +50,12 @@ pub struct StateSetting {
 #[derive(Default, Debug)]
 struct TaskList {
     // TODO use this to debug
-    tasks: Vec<String>,
+    tasks: Vec<Task>,
+}
+
+#[derive(Debug)]
+struct Task{
+
 }
 
 impl Default for StateSetting {
@@ -158,7 +163,7 @@ impl InputField {
 }
 
 impl Input {
-    // TODO refactor this bullshit tpye
+    // TODO refactor this bullshit type
     pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
         let (s1, s2, s3, s4) = match self.field_selected {
             InputField::Timer => (
@@ -362,7 +367,7 @@ impl App {
         }
     }
 
-    // FIXME tell user not to set a timer more than 100 minites
+    // FIXME tell user not to set a timer more than 100 minutes
     pub fn set_timer(&mut self) {
         match (
             self.user_input.timer.parse::<u64>(),
@@ -378,7 +383,7 @@ impl App {
                 };
                 // it is a thing that when you change this value when the pomodoro loop has
                 // started; the change will apply next loop
-                // because we dont modify the value of self.state to change its behavior
+                // because we don't modify the value of self.state to change its behavior
                 // TODO we can let user choose here
                 self.state_setting = StateSetting {
                     pomodoro_per_long_break,

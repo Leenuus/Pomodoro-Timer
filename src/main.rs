@@ -23,7 +23,7 @@ fn main() -> io::Result<()> {
     let mut args = std::env::args();
     let _program = args.next().unwrap();
     let fps = match args.next() {
-        // TODO fix strange Rust error type convertion
+        // TODO fix strange Rust error type conversion
         Some(fps) => fps.parse::<u64>().expect("Invalid FPS"),
         None => FPS,
     };

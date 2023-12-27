@@ -99,7 +99,7 @@ pub fn get_digit(num: u64) -> &'static str {
 }
 
 pub fn render_digit(num: &str, border: Borders) -> Paragraph<'_> {
-    // FIXME ascii art digit dont display as expected
+    // FIXME ascii art digit don't display as expected
     let num: Vec<_> = num.lines().collect();
     let text: Vec<_> = num.iter().map(|&line| Line::from(line)).collect();
     // TODO colorscheme design
