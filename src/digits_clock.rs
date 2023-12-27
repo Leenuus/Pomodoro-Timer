@@ -126,17 +126,7 @@ pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    let time = match app.state{
-        crate::State::Pomodoro => app.timer.timer,
-        crate::State::LongBreak => app.timer.long_break,
-        crate::State::ShortBreak => app.timer.short_break
-    };
-    let (d1, d2, d3, d4) = match (app.start_time, app.time_left) {
-        (_, Some(time_left)) => time_convert(time_left.as_secs()),
-        (None, None) => time_convert(time.as_secs()),
-        _ => unreachable!("Bad logic rendering digit clock")
-
-    };
+    let (d1, d2, d3, d4) = (ZERO, ZERO, ZERO, ZERO);
 
     render_clock_digit(frame, layout[0], d1, 0);
 
