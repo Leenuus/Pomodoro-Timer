@@ -1,9 +1,13 @@
+#![allow(clippy::single_match)]
+#![allow(clippy::type_complexity)]
+
 use std::time::{Duration, Instant};
 
 const SECS_PER_MINUTE: u64 = 60;
 const POMODORO_LENGTH: u64 = 25;
 const SHORT_BREAK_LENGTH: u64 = 5;
 const LONG_BREAK_LENGTH: u64 = 15;
+
 /// State(whether the timer is up)
 #[derive(Default)]
 pub enum State {
@@ -16,7 +20,7 @@ pub enum State {
 #[derive(Default)]
 pub struct App {
     // this field to store user settings
-    timer_setting: TimerSetting,
+    pub timer_setting: TimerSetting,
     // this field is for echoing user input
     user_input: Input,
     // Running timer
@@ -159,9 +163,9 @@ impl Default for Input {
 }
 
 pub struct TimerSetting {
-    timer: Duration,
-    short_break: Duration,
-    long_break: Duration,
+    pub timer: Duration,
+    pub short_break: Duration,
+    pub long_break: Duration,
 }
 
 impl Default for TimerSetting {
@@ -248,27 +252,34 @@ impl App {
     }
 
     pub fn update(&mut self) {
-        // TODO update pomodoro state, if the timer has finished
         if let Some(ref mut timer) = self.timer {
             if timer.is_finished() {
-                // TODO switch to next state
+                // TODO after some short breaks, switch to long break
+                match self.state {
+                    State::Pomodoro => self.state = State::ShortBreak,
+                    State::ShortBreak => self.state = State::Pomodoro,
+                    State::LongBreak => self.state = State::Pomodoro,
+                }
             } else {
                 timer.update();
             }
-        }
-        // else the timer is not started, nothing to update
+        } // else the timer is not started, nothing to update
     }
 
     pub fn get_time_left(&self) -> u64 {
         match self.timer {
             Some(ref timer) => timer.get_time_left().as_secs(),
-            // TODO considering different state
-            None => self.timer_setting.timer.as_secs(),
+            None => {
+                match self.state {
+                    State::Pomodoro => self.timer_setting.timer.as_secs(),
+                    State::ShortBreak => self.timer_setting.short_break.as_secs(),
+                    State::LongBreak => self.timer_setting.long_break.as_secs()
+                }
+            }
         }
     }
 
     pub fn set_timer(&mut self) {
-        // FIXME when user input is greater than 100
         match (
             self.user_input.timer.parse::<u64>(),
             self.user_input.short_break.parse::<u64>(),
