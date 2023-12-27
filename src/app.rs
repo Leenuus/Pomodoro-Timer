@@ -126,57 +126,71 @@ pub struct Input {
     timer: String,
     short_break: String,
     long_break: String,
+    pomodoro_per_long_break: String,
     field_selected: InputField,
 }
 
 #[derive(Clone, Copy, Debug)]
 enum InputField {
-    //  TODO one more field for `pomodoro_per_long_break`
     Timer,
     ShortBreak,
     LongBreak,
+    PomodoroPerLongBreak,
 }
 
 impl InputField {
     pub fn prev_field(self) -> Self {
         match self {
-            InputField::Timer => InputField::LongBreak,
+            InputField::Timer => InputField::PomodoroPerLongBreak,
             InputField::ShortBreak => InputField::Timer,
             InputField::LongBreak => InputField::ShortBreak,
+            InputField::PomodoroPerLongBreak => InputField::LongBreak,
         }
     }
     pub fn next_field(self) -> Self {
         match self {
             InputField::Timer => InputField::ShortBreak,
             InputField::ShortBreak => InputField::LongBreak,
-            InputField::LongBreak => InputField::Timer,
+            InputField::LongBreak => InputField::PomodoroPerLongBreak,
+            InputField::PomodoroPerLongBreak => InputField::Timer,
         }
     }
 }
 
 impl Input {
-    pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
-        let (s1, s2, s3) = match self.field_selected {
+    // TODO refactor this bullshit tpye
+    pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
+        let (s1, s2, s3, s4) = match self.field_selected {
             InputField::Timer => (
                 ">> Timer Length: ",
                 "Short Break Length: ",
                 "Long Break Length: ",
+                "Pomodoros Per Long Break: ",
             ),
             InputField::ShortBreak => (
                 "Timer Length: ",
                 ">> Short Break Length: ",
                 "Long Break Length: ",
+                "Pomodoros Per Long Break: ",
             ),
             InputField::LongBreak => (
                 "Timer Length: ",
                 "Short Break Length: ",
                 ">> Long Break Length: ",
+                "Pomodoros Per Long Break: ",
+            ),
+            InputField::PomodoroPerLongBreak => (
+                "Timer Length: ",
+                "Short Break Length: ",
+                "Long Break Length: ",
+                ">> Pomodoros Per Long Break: ",
             ),
         };
         (
             (s1, self.timer.as_str()),
             (s2, self.short_break.as_str()),
             (s3, self.long_break.as_str()),
+            (s4, self.pomodoro_per_long_break.as_str()),
         )
     }
 
@@ -185,6 +199,7 @@ impl Input {
             InputField::Timer => &mut self.timer,
             InputField::ShortBreak => &mut self.short_break,
             InputField::LongBreak => &mut self.long_break,
+            InputField::PomodoroPerLongBreak => &mut self.pomodoro_per_long_break,
         }
     }
 
@@ -202,6 +217,7 @@ impl Default for Input {
             timer: POMODORO_LENGTH.to_string(),
             short_break: SHORT_BREAK_LENGTH.to_string(),
             long_break: LONG_BREAK_LENGTH.to_string(),
+            pomodoro_per_long_break: DEFAULT_POMODORO_PER_LONG_BREAK.to_string(),
             field_selected: InputField::Timer,
         }
     }
@@ -261,7 +277,7 @@ impl App {
         self.user_input.get_field_mut().pop();
     }
 
-    pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
+    pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
         self.user_input.display()
     }
 
@@ -352,17 +368,26 @@ impl App {
             self.user_input.timer.parse::<u64>(),
             self.user_input.short_break.parse::<u64>(),
             self.user_input.long_break.parse::<u64>(),
+            self.user_input.pomodoro_per_long_break.parse::<u64>(),
         ) {
-            (Ok(timer), Ok(short_break), Ok(long_break)) => {
+            (Ok(timer), Ok(short_break), Ok(long_break), Ok(pomodoro_per_long_break)) => {
                 self.timer_setting = TimerSetting {
                     timer: Duration::from_secs(timer * SECS_PER_MINUTE),
                     short_break: Duration::from_secs(short_break * SECS_PER_MINUTE),
                     long_break: Duration::from_secs(long_break * SECS_PER_MINUTE),
                 };
+                // it is a thing that when you change this value when the pomodoro loop has
+                // started; the change will apply next loop
+                // because we dont modify the value of self.state to change its behavior
+                // TODO we can let user choose here
+                self.state_setting = StateSetting {
+                    pomodoro_per_long_break,
+                };
             }
             _ => {
                 self.user_input = Input::default();
                 self.timer_setting = TimerSetting::default();
+                self.state_setting = StateSetting::default();
             }
         }
     }

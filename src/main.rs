@@ -91,7 +91,7 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             app.select_next_field();
             Ok(false)
         }
-        (KeyEventKind::Press, KeyCode::BackTab, _) | (KeyEventKind::Press, KeyCode::Up, _)=> {
+        (KeyEventKind::Press, KeyCode::BackTab, _) | (KeyEventKind::Press, KeyCode::Up, _) => {
             app.select_prev_field();
             Ok(false)
         }
@@ -205,8 +205,8 @@ fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
-    let ((s1, timer), (s2, short_break), (s3, long_break)) = app.display_user_input();
-    // TODO Add some padding to this widget
+    let ((s1, timer), (s2, short_break), (s3, long_break), (s4, pomodoro_per_long_break)) =
+        app.display_user_input();
     let text = vec![
         Line::from(vec![
             Span::styled(s1, Style::new().green().italic()),
@@ -225,9 +225,19 @@ fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
             Span::from(long_break).style(Style::default()),
             Span::styled("  min", Style::new().blue().italic()),
         ]),
+        Line::from(vec![
+            Span::styled(s4, Style::new().green().italic()),
+            Span::from(pomodoro_per_long_break).style(Style::default()),
+        ]),
     ];
+    // TODO Add some padding to this widget
     let b = Paragraph::new(text)
-        .block(Block::new().title("Settings").borders(Borders::ALL))
+        .block(
+            Block::new()
+                .title("Settings")
+                .borders(Borders::ALL)
+                .padding(Padding::default()),
+        )
         .style(Style::default())
         .alignment(Alignment::Left);
     // .wrap(Wrap { trim: true });
