@@ -5,16 +5,12 @@ const POMODORO_LENGTH: u64 = 25;
 const SHORT_BREAK_LENGTH: u64 = 5;
 const LONG_BREAK_LENGTH: u64 = 15;
 /// State(whether the timer is up)
+#[derive(Default)]
 pub enum State {
+    #[default]
     Pomodoro,
     ShortBreak,
     LongBreak,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Pomodoro
-    }
 }
 
 #[derive(Default)]
@@ -26,16 +22,68 @@ pub struct App {
     // Running timer
     timer: Option<Timer>,
     // TODO The state of Pomodoro
-    state: State,
+    pub state: State,
     // this field let user choose tabs
     pub tab_selected: usize,
 }
 
 pub struct Timer {
-    start_time: Instant,
-    time_left: Duration,
-    actual_start_time: Instant,
-    actual_time_left: Duration,
+    total_time: Duration,
+    launch_timer: Instant,
+    /// TODO for future statistics feature
+    time_passed: Duration,
+    pause_timer: Option<Instant>,
+    time_pause: Duration,
+}
+
+impl Timer {
+    pub fn new(time: Duration) -> Self {
+        let now = Instant::now();
+        Self {
+            total_time: time,
+            launch_timer: now,
+            time_passed: Duration::ZERO,
+            pause_timer: None,
+            time_pause: Duration::ZERO,
+        }
+    }
+
+    pub fn get_time_left(&self) -> Duration {
+        self.total_time.saturating_sub(self.time_passed)
+    }
+
+    pub fn pause(&mut self) {
+        match self.pause_timer {
+            Some(_) => {}
+            None => {
+                self.pause_timer = Some(Instant::now());
+            }
+        }
+    }
+
+    pub fn resume(&mut self) {
+        match self.pause_timer {
+            Some(timer) => {
+                self.time_pause += timer.elapsed();
+                self.pause_timer = None;
+            }
+            None => {}
+        }
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.time_passed > self.total_time
+    }
+
+    pub fn update(&mut self) {
+        if self.pause_timer.is_none() {
+            self.time_passed = self.launch_timer.elapsed().saturating_sub(self.time_pause);
+        }
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.pause_timer.is_some()
+    }
 }
 
 pub struct Input {
@@ -119,8 +167,8 @@ pub struct TimerSetting {
 impl Default for TimerSetting {
     fn default() -> Self {
         TimerSetting {
-            timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
-            // timer: Duration::from_secs(3),
+            // timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
+            timer: Duration::from_secs(8),
             short_break: Duration::from_secs(SECS_PER_MINUTE * SHORT_BREAK_LENGTH),
             long_break: Duration::from_secs(SECS_PER_MINUTE * LONG_BREAK_LENGTH),
         }
@@ -148,28 +196,75 @@ impl App {
         self.user_input.select_prev_field();
     }
 
-    pub fn push_user_input_field(&mut self, c: char){
+    pub fn push_user_input_field(&mut self, c: char) {
         self.user_input.get_field_mut().push(c);
     }
 
-    pub fn pop_user_input_field(&mut self){
+    pub fn pop_user_input_field(&mut self) {
         self.user_input.get_field_mut().pop();
     }
 
-    pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str)){
+    pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
         self.user_input.display()
     }
 
+    pub fn abort_timer(&mut self) {
+        match self.timer {
+            Some(_) => {
+                self.timer = None;
+                // TODO go to next state
+            }
+            None => {}
+        };
+    }
+
+    pub fn toggle_timer(&mut self) {
+        match self.timer {
+            Some(ref mut timer) => {
+                if timer.is_paused() {
+                    timer.resume();
+                } else {
+                    timer.pause();
+                }
+            }
+            None => self.launch_timer(),
+        }
+    }
+
     pub fn pause_timer(&mut self) {
-        todo!()
+        if let Some(ref mut timer) = self.timer {
+            timer.pause();
+        }
     }
 
     pub fn launch_timer(&mut self) {
-        todo!()
+        match self.timer {
+            None => {
+                // TODO considering state
+                self.timer = Some(Timer::new(self.timer_setting.timer));
+            }
+            Some(_) => {}
+        }
     }
 
-    pub fn update_timer(&mut self) {
-        todo!()
+    pub fn update(&mut self) {
+        // TODO update pomodoro state, if the timer has finished
+        if let Some(ref mut timer) = self.timer {
+            if timer.is_finished() {
+                // TODO switch to next state
+            } else {
+                timer.update();
+            }
+        }
+        // else the timer is not started, nothing to update
+    }
+
+    pub fn get_time_left(&self) -> u64 {
+        match self.timer {
+            Some(ref timer) => timer.get_time_left().as_secs(),
+            // TODO considering different state
+            None => self.timer_setting.timer.as_secs(),
+        }
     }
 
     pub fn set_timer(&mut self) {

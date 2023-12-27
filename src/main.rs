@@ -32,8 +32,8 @@ fn main() -> io::Result<()> {
         terminal.draw(|frame| ui(frame, &app))?;
         should_quit = handle_events(&mut app)?;
         sleep(Duration::from_millis(INTERVAL));
-        // TODO handle timer here
-        // app.update_timer();
+        // here we update our timer every cycle
+        app.update();
     }
 
     disable_raw_mode()?;
@@ -101,8 +101,18 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             } else if code == 'k' {
                 app.select_prev_field();
                 Ok(false)
-            } else if code == ' ' {
+            } else if code == 'm'{
+                app.abort_timer();
+                Ok(false)
+            } else if code == 'p'{
                 app.launch_timer();
+                Ok(false)
+            }else if code == 'c'{
+                app.pause_timer();
+                Ok(false)
+            }
+            else if code == ' ' {
+                app.toggle_timer();
                 Ok(false)
             } else {
                 Ok(false)

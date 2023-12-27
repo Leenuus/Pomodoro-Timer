@@ -126,7 +126,7 @@ pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    let (d1, d2, d3, d4) = (ZERO, ZERO, ZERO, ZERO);
+    let (d1, d2, d3, d4) = time_convert(app.get_time_left());
 
     render_clock_digit(frame, layout[0], d1, 0);
 
