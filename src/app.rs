@@ -173,7 +173,7 @@ impl App {
     }
 
     pub fn set_timer(&mut self) {
-        // FIXME when user input is greater than 0
+        // FIXME when user input is greater than 100
         match (
             self.user_input.timer.parse::<u64>(),
             self.user_input.short_break.parse::<u64>(),
