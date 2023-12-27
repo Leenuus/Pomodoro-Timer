@@ -1,4 +1,3 @@
-// TODO Wrap and trim in ratatui
 use std::{
     io::{self, stdout},
     thread::sleep,
@@ -6,16 +5,17 @@ use std::{
 };
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use ratatui::{prelude::*, widgets::*};
 
-pub mod digits_clock;
+mod digits_clock;
 use crate::digits_clock::*;
-pub mod app;
+mod app;
 use crate::app::*;
+mod input;
+use crate::input::handle_events;
 
 const FPS: u64 = 30;
 
@@ -45,86 +45,6 @@ fn main() -> io::Result<()> {
     disable_raw_mode()?;
     stdout().execute(LeaveAlternateScreen)?;
     Ok(())
-}
-
-fn handle_events(app: &mut App) -> io::Result<bool> {
-    if event::poll(std::time::Duration::from_millis(50))? {
-        match event::read()? {
-            Event::Key(key) => {
-                return handle_key(key, app);
-            }
-            Event::FocusGained => {}
-            Event::FocusLost => {}
-            Event::Mouse(_event) => {}
-            Event::Paste(_data) => {
-                // println!("{:?}", data);
-            }
-            Event::Resize(_width, _height) => {
-                // println!("New size {}x{}", width, height);
-            }
-        }
-    }
-    Ok(false)
-}
-
-// TODO dynamic keybindings
-fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
-    match (key.kind, key.code, key.modifiers) {
-        // we filter user illegal input here
-        (KeyEventKind::Press, KeyCode::Char(code), _) if code as u8 >= 48 && code as u8 <= 57 => {
-            app.push_user_input_field(code);
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::Esc, _) => {
-            app.clear_input_field();
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::Backspace, _) => {
-            app.pop_user_input_field();
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::Enter, _) => {
-            app.set_timer();
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::Tab, _) | (KeyEventKind::Press, KeyCode::Down, _) => {
-            app.select_next_field();
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::BackTab, _) | (KeyEventKind::Press, KeyCode::Up, _) => {
-            app.select_prev_field();
-            Ok(false)
-        }
-        (KeyEventKind::Press, KeyCode::Char(code), _) => {
-            if code == 'q' {
-                Ok(true)
-            } else if code == 'l' || code == 'h' {
-                app.tab_toggle();
-                Ok(false)
-            } else if code == 'j' {
-                app.select_next_field();
-                Ok(false)
-            } else if code == 'k' {
-                app.select_prev_field();
-                Ok(false)
-            } else if code == 'm' {
-                app.abort_timer();
-                Ok(false)
-            } else if code == 'p' {
-                app.launch_timer();
-                Ok(false)
-            } else if code == 'c' {
-                app.pause_timer();
-                Ok(false)
-            } else if code == ' ' {
-                app.toggle_timer();
-                Ok(false)
-            } else {
-                Ok(false)
-            }
-        }
-        _ => Ok(false),
-    }
 }
 
 fn ui(frame: &mut Frame, app: &App) {
@@ -170,13 +90,18 @@ fn render_console(frame: &mut Frame, area: Rect, app: &App) {
     )
     .split(area);
 
-    render_usage_prompt(frame, layout[0]);
+    render_state_prompt(frame, layout[0]);
     render_user_input_fields(frame, layout[1], app);
 }
 
-fn render_usage_prompt(frame: &mut Frame, area: Rect) {
+#[allow(unused)]
+fn render_help_screen(frame: &mut Frame, area: Rect){
+    // TODO we can generate help from keymap
+    todo!()
+}
+
+fn render_state_prompt(frame: &mut Frame, area: Rect) {
     // TODO usage prompt widget: render it with dynamic keymaps
-    // we can generate usage help from keymap
     let d1 = Block::default()
         .title("Usage")
         .borders(Borders::ALL)
@@ -230,7 +155,6 @@ fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
             Span::from(pomodoro_per_long_break).style(Style::default()),
         ]),
     ];
-    // TODO Add some padding to this widget
     let b = Paragraph::new(text)
         .block(
             Block::new()
