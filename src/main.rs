@@ -20,19 +20,25 @@ use crate::app::*;
 const FPS: u64 = 30;
 
 fn main() -> io::Result<()> {
+    let mut args = std::env::args();
+    let _program = args.next().unwrap();
+    let fps = match args.next() {
+        // TODO fix strange Rust error type convertion
+        Some(fps) => fps.parse::<u64>().expect("Invalid FPS"),
+        None => FPS,
+    };
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let mut should_quit = false;
-    const INTERVAL: u64 = 1000 / FPS;
+    let interval: u64 = 1000 / fps;
 
     let mut app = App::default(); // initialize App
 
     while !should_quit {
         terminal.draw(|frame| ui(frame, &app))?;
         should_quit = handle_events(&mut app)?;
-        sleep(Duration::from_millis(INTERVAL));
-        // here we update our timer every cycle
+        sleep(Duration::from_millis(interval));
         app.update();
     }
 
@@ -61,7 +67,7 @@ fn handle_events(app: &mut App) -> io::Result<bool> {
     Ok(false)
 }
 
-// TODO vim like keybindings
+// TODO dynamic keybindings
 fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
     match (key.kind, key.code, key.modifiers) {
         // we filter user illegal input here
@@ -81,11 +87,11 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             app.set_timer();
             Ok(false)
         }
-        (KeyEventKind::Press, KeyCode::Tab, _) => {
+        (KeyEventKind::Press, KeyCode::Tab, _) | (KeyEventKind::Press, KeyCode::Down, _) => {
             app.select_next_field();
             Ok(false)
         }
-        (KeyEventKind::Press, KeyCode::BackTab, _) => {
+        (KeyEventKind::Press, KeyCode::BackTab, _) | (KeyEventKind::Press, KeyCode::Up, _)=> {
             app.select_prev_field();
             Ok(false)
         }
@@ -101,17 +107,16 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             } else if code == 'k' {
                 app.select_prev_field();
                 Ok(false)
-            } else if code == 'm'{
+            } else if code == 'm' {
                 app.abort_timer();
                 Ok(false)
-            } else if code == 'p'{
+            } else if code == 'p' {
                 app.launch_timer();
                 Ok(false)
-            }else if code == 'c'{
+            } else if code == 'c' {
                 app.pause_timer();
                 Ok(false)
-            }
-            else if code == ' ' {
+            } else if code == ' ' {
                 app.toggle_timer();
                 Ok(false)
             } else {

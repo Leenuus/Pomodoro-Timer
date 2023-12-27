@@ -7,17 +7,26 @@ const SECS_PER_MINUTE: u64 = 60;
 const POMODORO_LENGTH: u64 = 25;
 const SHORT_BREAK_LENGTH: u64 = 5;
 const LONG_BREAK_LENGTH: u64 = 15;
+const DEFAULT_POMODORO_PER_LONG_BREAK: u64 = 4;
 
-/// State(whether the timer is up)
-#[derive(Default)]
+#[derive(Debug)]
 pub enum State {
-    #[default]
-    Pomodoro,
-    ShortBreak,
+    Pomodoro(u64),
+    ShortBreak(u64),
     LongBreak,
 }
 
-#[derive(Default)]
+impl Default for State {
+    fn default() -> Self {
+        if cfg!(debug_assertions) {
+            Self::Pomodoro(2)
+        } else {
+            Self::Pomodoro(DEFAULT_POMODORO_PER_LONG_BREAK)
+        }
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct App {
     // this field to store user settings
     pub timer_setting: TimerSetting,
@@ -25,12 +34,34 @@ pub struct App {
     user_input: Input,
     // Running timer
     timer: Option<Timer>,
-    // TODO The state of Pomodoro
+    pub state_setting: StateSetting,
     pub state: State,
     // this field let user choose tabs
     pub tab_selected: usize,
+    // TODO tasks list
+    task_list: TaskList,
 }
 
+#[derive(Debug)]
+pub struct StateSetting {
+    pomodoro_per_long_break: u64,
+}
+
+#[derive(Default, Debug)]
+struct TaskList {
+    // TODO use this to debug
+    tasks: Vec<String>,
+}
+
+impl Default for StateSetting {
+    fn default() -> Self {
+        Self {
+            pomodoro_per_long_break: DEFAULT_POMODORO_PER_LONG_BREAK,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Timer {
     total_time: Duration,
     launch_timer: Instant,
@@ -90,32 +121,57 @@ impl Timer {
     }
 }
 
+#[derive(Debug)]
 pub struct Input {
     timer: String,
     short_break: String,
     long_break: String,
-    field_selected: usize,
+    field_selected: InputField,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum InputField {
+    //  TODO one more field for `pomodoro_per_long_break`
+    Timer,
+    ShortBreak,
+    LongBreak,
+}
+
+impl InputField {
+    pub fn prev_field(self) -> Self {
+        match self {
+            InputField::Timer => InputField::LongBreak,
+            InputField::ShortBreak => InputField::Timer,
+            InputField::LongBreak => InputField::ShortBreak,
+        }
+    }
+    pub fn next_field(self) -> Self {
+        match self {
+            InputField::Timer => InputField::ShortBreak,
+            InputField::ShortBreak => InputField::LongBreak,
+            InputField::LongBreak => InputField::Timer,
+        }
+    }
 }
 
 impl Input {
     pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
         let (s1, s2, s3) = match self.field_selected {
-            0 => (
+            InputField::Timer => (
                 ">> Timer Length: ",
                 "Short Break Length: ",
                 "Long Break Length: ",
             ),
-            1 => (
+            InputField::ShortBreak => (
                 "Timer Length: ",
                 ">> Short Break Length: ",
                 "Long Break Length: ",
             ),
-            2 => (
+            InputField::LongBreak => (
                 "Timer Length: ",
                 "Short Break Length: ",
                 ">> Long Break Length: ",
             ),
-            _ => panic!("Not implemented Field"),
         };
         (
             (s1, self.timer.as_str()),
@@ -126,28 +182,17 @@ impl Input {
 
     pub fn get_field_mut(&mut self) -> &mut String {
         match self.field_selected {
-            0 => &mut self.timer,
-            1 => &mut self.short_break,
-            2 => &mut self.long_break,
-            _ => panic!("Not implemented input field"),
+            InputField::Timer => &mut self.timer,
+            InputField::ShortBreak => &mut self.short_break,
+            InputField::LongBreak => &mut self.long_break,
         }
     }
 
     pub fn select_prev_field(&mut self) {
-        match self.field_selected {
-            0 => self.field_selected = 2,
-            1 => self.field_selected = 0,
-            2 => self.field_selected = 1,
-            _ => panic!("Not implemented input field"),
-        }
+        self.field_selected = self.field_selected.prev_field();
     }
     pub fn select_next_field(&mut self) {
-        match self.field_selected {
-            0 => self.field_selected = 1,
-            1 => self.field_selected = 2,
-            2 => self.field_selected = 0,
-            _ => panic!("Not implemented input field"),
-        }
+        self.field_selected = self.field_selected.next_field();
     }
 }
 
@@ -157,11 +202,12 @@ impl Default for Input {
             timer: POMODORO_LENGTH.to_string(),
             short_break: SHORT_BREAK_LENGTH.to_string(),
             long_break: LONG_BREAK_LENGTH.to_string(),
-            field_selected: 0,
+            field_selected: InputField::Timer,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct TimerSetting {
     pub timer: Duration,
     pub short_break: Duration,
@@ -170,11 +216,18 @@ pub struct TimerSetting {
 
 impl Default for TimerSetting {
     fn default() -> Self {
-        TimerSetting {
-            // timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
-            timer: Duration::from_secs(8),
-            short_break: Duration::from_secs(SECS_PER_MINUTE * SHORT_BREAK_LENGTH),
-            long_break: Duration::from_secs(SECS_PER_MINUTE * LONG_BREAK_LENGTH),
+        if cfg!(debug_assertions) {
+            TimerSetting {
+                timer: Duration::from_secs(3),
+                short_break: Duration::from_secs(1),
+                long_break: Duration::from_secs(2),
+            }
+        } else {
+            TimerSetting {
+                timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
+                short_break: Duration::from_secs(SECS_PER_MINUTE * SHORT_BREAK_LENGTH),
+                long_break: Duration::from_secs(SECS_PER_MINUTE * LONG_BREAK_LENGTH),
+            }
         }
     }
 }
@@ -216,7 +269,14 @@ impl App {
         match self.timer {
             Some(_) => {
                 self.timer = None;
-                // TODO go to next state
+                match self.state {
+                    State::Pomodoro(0) => self.state = State::LongBreak,
+                    State::Pomodoro(x) => self.state = State::ShortBreak(x - 1),
+                    State::ShortBreak(x) => self.state = State::Pomodoro(x),
+                    State::LongBreak => {
+                        self.state = State::Pomodoro(self.state_setting.pomodoro_per_long_break)
+                    }
+                };
             }
             None => {}
         };
@@ -238,15 +298,20 @@ impl App {
     pub fn pause_timer(&mut self) {
         if let Some(ref mut timer) = self.timer {
             timer.pause();
-        }
+        } // do nothing when no timer is running
     }
 
     pub fn launch_timer(&mut self) {
         match self.timer {
             None => {
-                // TODO considering state
-                self.timer = Some(Timer::new(self.timer_setting.timer));
+                let time = match self.state {
+                    State::Pomodoro(_) => self.timer_setting.timer,
+                    State::LongBreak => self.timer_setting.long_break,
+                    State::ShortBreak(_) => self.timer_setting.short_break,
+                };
+                self.timer = Some(Timer::new(time));
             }
+            // there is a timer running, we do nothing
             Some(_) => {}
         }
     }
@@ -254,12 +319,16 @@ impl App {
     pub fn update(&mut self) {
         if let Some(ref mut timer) = self.timer {
             if timer.is_finished() {
-                // TODO after some short breaks, switch to long break
                 match self.state {
-                    State::Pomodoro => self.state = State::ShortBreak,
-                    State::ShortBreak => self.state = State::Pomodoro,
-                    State::LongBreak => self.state = State::Pomodoro,
+                    State::Pomodoro(0) => self.state = State::LongBreak,
+                    State::Pomodoro(x) => self.state = State::ShortBreak(x - 1),
+                    State::ShortBreak(x) => self.state = State::Pomodoro(x),
+                    State::LongBreak => {
+                        self.state = State::Pomodoro(self.state_setting.pomodoro_per_long_break)
+                    }
                 }
+                // When time is up, we set timer back to None
+                self.timer = None;
             } else {
                 timer.update();
             }
@@ -269,16 +338,15 @@ impl App {
     pub fn get_time_left(&self) -> u64 {
         match self.timer {
             Some(ref timer) => timer.get_time_left().as_secs(),
-            None => {
-                match self.state {
-                    State::Pomodoro => self.timer_setting.timer.as_secs(),
-                    State::ShortBreak => self.timer_setting.short_break.as_secs(),
-                    State::LongBreak => self.timer_setting.long_break.as_secs()
-                }
-            }
+            None => match self.state {
+                State::Pomodoro(_) => self.timer_setting.timer.as_secs(),
+                State::ShortBreak(_) => self.timer_setting.short_break.as_secs(),
+                State::LongBreak => self.timer_setting.long_break.as_secs(),
+            },
         }
     }
 
+    // FIXME tell user not to set a timer more than 100 minites
     pub fn set_timer(&mut self) {
         match (
             self.user_input.timer.parse::<u64>(),
