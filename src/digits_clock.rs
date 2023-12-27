@@ -68,7 +68,7 @@ pub fn time_convert(secs: u64) -> (&'static str, &'static str, &'static str, &'s
     let secs = secs % 60;
 
     let (m0, m1) = match minutes {
-        // FIXME ONLY two digit clock is supported now
+        // FIXME user input greater than 100
         x if x < 100 => (get_digit(x / 10), get_digit(x % 10)),
         _ => panic!(),
     };
