@@ -42,7 +42,7 @@ impl<T> StatefulList<T> {
                     i + 1
                 }
             }
-            // select first display item but not the first item
+            // NOTE select first display item but not the first item
             None => self.state.offset(),
         };
         self.state.select(Some(i));
@@ -607,5 +607,16 @@ impl App {
                 .unwrap_or(1),
         };
         self.task_list.items.push(task);
+    }
+
+    pub fn delete_task(&mut self) {
+        match self.task_list.state.selected() {
+            None => {}
+            Some(idx) => {
+                self.task_list.items.remove(idx);
+                // FIXME reasonable deletion
+                self.task_list.previous_entry();
+            }
+        };
     }
 }

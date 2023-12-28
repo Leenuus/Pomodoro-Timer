@@ -122,6 +122,12 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
                     Tabs::TaskManager => app.push_user_input_field(code),
                 }
                 Ok(false)
+            } else if code == 'x' {
+                match app.tab_selected {
+                    Tabs::PomodoroSetting => app.delete_task(),
+                    Tabs::TaskManager => app.push_user_input_field(code),
+                }
+                Ok(false)
             } else if code == ' ' {
                 match app.tab_selected {
                     Tabs::PomodoroSetting => app.toggle_timer(),

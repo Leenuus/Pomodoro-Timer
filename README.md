@@ -8,15 +8,15 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 ### Basic Features
 
 - [X] Basic User Interface
-- [X] Timer Controller(Start, Pause, Skip, Break, Long Break)
-- [ ] Task Manager and Task List
-    - Add Task
-    - task specific settings
-    - delete Tasks
+- [X] Timer Controller(Start, Pause, Skip, Break, Long Break), 12/27
+- [X] Task Manager and Task List
+    - [X] Add Task, 12/28
+    - [X]task specific settings, 12/28
+    - [X] delete Tasks
+- [ ] Vim-like Keybindings; Dynamic Keybindings
 - [ ] Help page
 - [ ] Usage prompt; State prompt
 - [ ] Timer Presets 
-- [ ] Dynamic Keybindings, Vim-like Keybindings
 - [ ] Stop Watch
 - [ ] Store User Settings and Data
 - [ ] Backup and restore user's `settings` and `data`
