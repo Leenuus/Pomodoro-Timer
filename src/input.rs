@@ -57,7 +57,7 @@ fn handle_key(
                 // NOTE these keys has no special mapping
                 // if they are valid setting input, we push them to screen
                 if let KeyCode::Char(code) = key.code {
-                    if code.is_digit(10) {
+                    if code.is_ascii_digit() {
                         app.push_user_input_field(code);
                     }
                 }

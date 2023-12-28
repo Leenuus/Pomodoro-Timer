@@ -20,7 +20,7 @@ use crate::app::*;
 mod input;
 use crate::input::handle_events;
 mod keybindings;
-use keybindings::{TimerSettingKeybindings, TaskManagerKeybindings};
+use keybindings::{TIMER_SETTING_KEYBINDINGS, TASK_MANAGER_KEYBINDINGS};
 
 const FPS: u64 = 30;
 
@@ -41,7 +41,7 @@ fn main() -> io::Result<()> {
 
     while !app.should_quit {
         terminal.draw(|frame| ui(frame, &mut app))?;
-        handle_events(&mut app, &TimerSettingKeybindings, &TaskManagerKeybindings)?;
+        handle_events(&mut app, &TIMER_SETTING_KEYBINDINGS, &TASK_MANAGER_KEYBINDINGS)?;
         sleep(Duration::from_millis(interval));
         app.update();
     }

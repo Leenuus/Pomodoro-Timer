@@ -32,7 +32,7 @@ const DELETE_TASK: AppAction = App::delete_task;
 const QUIT_APP: AppAction = App::quit;
 
 lazy_static! {
-    pub static ref TimerSettingKeybindings: HashMap<KeyEvent, AppAction> = {
+    pub static ref TIMER_SETTING_KEYBINDINGS: HashMap<KeyEvent, AppAction> = {
         let mut m = HashMap::new();
     // clear input field
         m.insert(
@@ -120,7 +120,7 @@ lazy_static! {
     };
 
     /// NOTE keybinding for TaskManager
-    pub static ref TaskManagerKeybindings: HashMap<KeyEvent, AppAction> = {
+    pub static ref TASK_MANAGER_KEYBINDINGS: HashMap<KeyEvent, AppAction> = {
         let mut m = HashMap::new();
     // clear field
         m.insert(
