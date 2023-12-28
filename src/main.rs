@@ -20,7 +20,7 @@ use crate::app::*;
 mod input;
 use crate::input::handle_events;
 mod keybindings;
-use keybindings::KEYBINDINGS;
+use keybindings::TimerSettingKeybindings;
 
 const FPS: u64 = 30;
 
@@ -35,14 +35,13 @@ fn main() -> io::Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    let mut should_quit = false;
     let interval: u64 = 1000 / fps;
 
     let mut app = App::default(); // initialize App
 
-    while !should_quit {
+    while !app.should_quit {
         terminal.draw(|frame| ui(frame, &mut app))?;
-        should_quit = handle_events(&mut app, &KEYBINDINGS)?;
+        handle_events(&mut app, &TimerSettingKeybindings)?;
         sleep(Duration::from_millis(interval));
         app.update();
     }

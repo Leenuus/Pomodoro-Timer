@@ -23,7 +23,7 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        if items.len() != 0 {
+        if !items.is_empty() {
             StatefulList {
                 state: ListState::default().with_selected(Some(0)),
                 items,
@@ -101,6 +101,7 @@ pub struct App {
     // HACK use proc macro to generate input fields receiver struct and implementation
     pub task_manager_input: Input1, // NOTE TimerSetting input fields
     pub task_list: StatefulList<Task>,
+    pub should_quit: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -143,6 +144,7 @@ impl Default for App {
                 task_manager_input: Input1::default(),
                 tab_selected: Tabs::default(),
                 task_list,
+                should_quit: false,
             }
         } else {
             App {
@@ -154,6 +156,7 @@ impl Default for App {
                 task_manager_input: Input1::default(),
                 tab_selected: Tabs::default(),
                 task_list: StatefulList::default(),
+                should_quit: false,
             }
         }
     }
@@ -491,10 +494,6 @@ impl App {
         };
     }
 
-    pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
-        self.timer_setting_input.display()
-    }
-
     pub fn abort_timer(&mut self) {
         match self.timer {
             Some(_) => {
@@ -631,5 +630,9 @@ impl App {
                 self.task_list.previous_entry();
             }
         };
+    }
+
+    pub fn quit(&mut self){
+        self.should_quit = true;
     }
 }
