@@ -47,6 +47,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+// TODO render state prompt
 fn ui(frame: &mut Frame, app: &mut App) {
     let layout = Layout::new(
         Direction::Horizontal,
