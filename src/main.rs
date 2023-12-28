@@ -72,7 +72,7 @@ fn ui(frame: &mut Frame, app: &mut App) {
             render_right_side(frame, layout[1], app);
         }
         Page::Help => {
-            render_help_screen(frame, frame.size(), &app);
+            render_help_screen(frame, frame.size(), app);
         }
     }
 }
@@ -134,11 +134,7 @@ fn render_console(frame: &mut Frame, area: Rect, app: &App) {
 fn render_help_screen(frame: &mut Frame, area: Rect, app: &App) {
     let keys_to_help: Vec<String> = TIMER_SETTING_KEYBINDINGS
         .iter()
-        .filter_map(|(key_event, f)| match KEYBINDINGS_HELP_MESSAGE.get(&f) {
-            None => None,
-            // TODO pretty print key name help message
-            Some(help_msg) => Some(format!("{:?}: {}", key_event, help_msg)),
-        })
+        .filter_map(|(key_event, f)| KEYBINDINGS_HELP_MESSAGE.get(f).map(|help_msg| format!("{:?}: {}", key_event, help_msg)))
         .collect();
     let text: Vec<Line<'_>> = keys_to_help
         .iter()
