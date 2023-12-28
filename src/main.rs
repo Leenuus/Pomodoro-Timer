@@ -36,7 +36,7 @@ fn main() -> io::Result<()> {
     let mut app = App::default(); // initialize App
 
     while !should_quit {
-        terminal.draw(|frame| ui(frame, &app))?;
+        terminal.draw(|frame| ui(frame, &mut app))?;
         should_quit = handle_events(&mut app)?;
         sleep(Duration::from_millis(interval));
         app.update();
@@ -47,20 +47,18 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn ui(frame: &mut Frame, app: &App) {
+fn ui(frame: &mut Frame, app: &mut App) {
     let layout = Layout::new(
         Direction::Horizontal,
         [Constraint::Ratio(1, 4), Constraint::Ratio(3, 4)],
     )
     .split(frame.size());
-    render_task_list(frame, layout[0]);
+    render_task_list(frame, layout[0], app);
     render_right_side(frame, layout[1], app);
 }
 
-fn render_task_list(frame: &mut Frame, area: Rect) {
-    // TODO TASK List widget
-    let items = ["Unix Programming", "Pomodoro Dev", "Computer Networking"];
-    let list = List::new(items)
+fn render_task_list(frame: &mut Frame, area: Rect, app: &mut App) {
+    let list = List::new(app.task_list.items.iter().map(|t| t.title()))
         .block(Block::default().title("Task List").borders(Borders::ALL))
         .style(Style::default().fg(Color::White))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
@@ -68,13 +66,13 @@ fn render_task_list(frame: &mut Frame, area: Rect) {
         .repeat_highlight_symbol(true)
         .direction(ListDirection::BottomToTop);
 
-    frame.render_widget(list, area);
+    frame.render_stateful_widget(list, area, &mut app.task_list.state);
 }
 
 fn render_right_side(frame: &mut Frame, area: Rect, app: &App) {
     let rs = Layout::new(
         Direction::Vertical,
-        [Constraint::Ratio(3, 4), Constraint::Ratio(1, 4)],
+        [Constraint::Ratio(3, 5), Constraint::Ratio(2, 5)],
     )
     .split(area);
 
@@ -95,7 +93,7 @@ fn render_console(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 #[allow(unused)]
-fn render_help_screen(frame: &mut Frame, area: Rect){
+fn render_help_screen(frame: &mut Frame, area: Rect) {
     // TODO we can generate help from keymap
     todo!()
 }
@@ -150,6 +148,7 @@ fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
             Span::from(long_break).style(Style::default()),
             Span::styled("  min", Style::new().blue().italic()),
         ]),
+        Line::default(),
         Line::from(vec![
             Span::styled(s4, Style::new().green().italic()),
             Span::from(pomodoro_per_long_break).style(Style::default()),

@@ -35,3 +35,4 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 ### Advanced Features
 
 - [ ] Generate Reports from using statistics
+- [ ] Mouse Responsive

@@ -71,6 +71,12 @@ fn handle_key(key: KeyEvent, app: &mut App) -> io::Result<bool> {
             } else if code == 'c' {
                 app.pause_timer();
                 Ok(false)
+            } else if code == 'w' {
+                app.task_list.previous_entry();
+                Ok(false)
+            } else if code == 's' {
+                app.task_list.next_entry();
+                Ok(false)
             } else if code == ' ' {
                 app.toggle_timer();
                 Ok(false)

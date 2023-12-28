@@ -3,11 +3,62 @@
 
 use std::time::{Duration, Instant};
 
+use ratatui::widgets::ListState;
+
 const SECS_PER_MINUTE: u64 = 60;
 const POMODORO_LENGTH: u64 = 25;
 const SHORT_BREAK_LENGTH: u64 = 5;
 const LONG_BREAK_LENGTH: u64 = 15;
 const DEFAULT_POMODORO_PER_LONG_BREAK: u64 = 4;
+const DEFAULT_POMODORO_PER_TASK: u64 = 1;
+
+#[derive(Debug, Default)]
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulList<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    pub fn next_entry(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            // select first display item but not the first item
+            None => self.state.offset(),
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn previous_entry(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => self.state.offset(),
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
+}
 
 #[derive(Debug)]
 pub enum State {
@@ -26,7 +77,7 @@ impl Default for State {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct App {
     // this field to store user settings
     pub timer_setting: TimerSetting,
@@ -38,8 +89,35 @@ pub struct App {
     pub state: State,
     // this field let user choose tabs
     pub tab_selected: usize,
-    // TODO tasks list
-    task_list: TaskList,
+    pub task_list: StatefulList<Task>,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        if cfg!(debug_assertions) {
+            let task_list = vec![Task::default(); 3];
+            let task_list = StatefulList::with_items(task_list);
+            App {
+                timer_setting: TimerSetting::default(),
+                user_input: Input::default(),
+                timer: None,
+                state_setting: StateSetting::default(),
+                state: State::default(),
+                tab_selected: 0,
+                task_list,
+            }
+        } else {
+            App {
+                timer_setting: TimerSetting::default(),
+                user_input: Input::default(),
+                timer: None,
+                state_setting: StateSetting::default(),
+                state: State::default(),
+                tab_selected: 0,
+                task_list: StatefulList::default(),
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -47,15 +125,33 @@ pub struct StateSetting {
     pomodoro_per_long_break: u64,
 }
 
-#[derive(Default, Debug)]
-struct TaskList {
-    // TODO use this to debug
-    tasks: Vec<Task>,
+/// HACK task start time, end time for future statistics feature
+#[derive(Debug, Clone)]
+pub struct Task {
+    title: String,
+    pub notes: String,
+    pub pomodoros: u64,
 }
 
-#[derive(Debug)]
-struct Task{
+impl Default for Task {
+    fn default() -> Self {
+        let (title, notes) = if cfg!(debug_assertions) {
+            (String::from("Unix Programming"), String::new())
+        } else {
+            (String::new(), String::new())
+        };
+        Self {
+            title,
+            notes,
+            pomodoros: DEFAULT_POMODORO_PER_TASK,
+        }
+    }
+}
 
+impl Task {
+    pub fn title(&self) -> &str {
+        &self.title
+    }
 }
 
 impl Default for StateSetting {
@@ -70,7 +166,7 @@ impl Default for StateSetting {
 pub struct Timer {
     total_time: Duration,
     launch_timer: Instant,
-    /// TODO for future statistics feature
+    /// HACK for future statistics feature
     time_passed: Duration,
     pause_timer: Option<Instant>,
     time_pause: Duration,
