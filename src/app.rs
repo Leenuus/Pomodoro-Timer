@@ -119,7 +119,17 @@ impl Tabs {
 impl Default for App {
     fn default() -> Self {
         if cfg!(debug_assertions) {
-            let task_list = vec![Task::default(); 3];
+            let task1 = Task{
+                title: "Pomodoro Timer Dev".to_string(),
+                notes: String::new(),
+                pomodoros: 2
+            };
+            let task2 = Task{
+                title: "Renpy GalGame Dev".to_string(),
+                notes: String::new(),
+                pomodoros: 2
+            };
+            let task_list = vec![Task::default(), task1, task2 ];
             let task_list = StatefulList::with_items(task_list);
             App {
                 timer_setting: TimerSetting::default(),

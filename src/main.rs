@@ -47,7 +47,6 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-// TODO render state prompt
 fn ui(frame: &mut Frame, app: &mut App) {
     let layout = Layout::new(
         Direction::Horizontal,
@@ -59,13 +58,14 @@ fn ui(frame: &mut Frame, app: &mut App) {
 }
 
 fn render_task_list(frame: &mut Frame, area: Rect, app: &mut App) {
-    let list = List::new(app.task_list.items.iter().map(|t| t.title()))
+    let texts: Vec<String> = app.task_list.items.iter().map(|t| format!("{} 0/{}", t.title(), t.pomodoros)).collect();
+    let list = List::new(texts)
         .block(
             Block::default()
                 .title("Task List")
                 .borders(Borders::ALL)
                 .title_position(block::Position::Top)
-                .title_alignment(Alignment::Center),
+                .title_alignment(Alignment::Center).padding(Padding::vertical(1))
         )
         .style(Style::default().fg(Color::White))
         .highlight_style(
