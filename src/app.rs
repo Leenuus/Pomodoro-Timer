@@ -463,6 +463,10 @@ impl App {
     }
 
     pub fn clear_input_field(&mut self) {
+        match self.tab_selected{
+            Tabs::TaskManager => self.task_manager_input.get_field_mut().clear(),
+            Tabs::PomodoroSetting => self.timer_setting_input.get_field_mut().clear(),
+        }
         self.timer_setting_input.get_field_mut().clear();
     }
 

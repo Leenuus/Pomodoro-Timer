@@ -2,7 +2,7 @@ use crate::app::{App, AppAction};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::collections::HashMap;
 
-// NOTE function pointer in Rust works in this way
+// NOTE function pointer in Rust works this way
 // https://doc.rust-lang.org/std/primitive.fn.html#creating-function-pointers
 const TAB_TOGGLE: AppAction = App::tab_toggle;
 
@@ -122,9 +122,11 @@ lazy_static! {
     /// NOTE keybinding for TaskManager
     pub static ref TaskManagerKeybindings: HashMap<KeyEvent, AppAction> = {
         let mut m = HashMap::new();
+    // clear field
         m.insert(
             KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
             CLEAR_INPUT_FIELD,
+    // switch tab
         );
         m.insert(
             KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),
