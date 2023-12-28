@@ -99,27 +99,25 @@ pub fn get_digit(num: u64) -> &'static str {
 }
 
 pub fn render_digit(num: &str, border: Borders) -> Paragraph<'_> {
-    // FIXME ascii art digit don't display as expected
     let num: Vec<_> = num.lines().collect();
     let text: Vec<_> = num.iter().map(|&line| Line::from(line)).collect();
-    // TODO colorscheme design
-    // let red = Color::Rgb(0xba, 0x49, 0x49);
     let res = Paragraph::new(text)
-        .block(Block::new().borders(border))
+        // FIXME these digits don't display as expect when the screen size is very small
+        // we need dynamic padding aware of the width of terminal
+        .block(Block::new().borders(border).padding(Padding::horizontal(8)))
         .style(Style::default())
-        .alignment(Alignment::Center)
-        .wrap(Wrap { trim: true });
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: false });
     res
 }
 
-// TODO not only timer, also __stop watch__
-// TODO Yet one more feature, different style of clock using `tab` feature
 pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     let layout = Layout::new(
         Direction::Horizontal,
         [
             Constraint::Ratio(1, 4),
             Constraint::Ratio(1, 4),
+            // TODO add `:` separator
             Constraint::Ratio(1, 4),
             Constraint::Ratio(1, 4),
         ],
@@ -144,8 +142,7 @@ pub fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u
             Borders::BOTTOM | Borders::LEFT,
             Borders::LEFT,
         ),
-        x if x == 1 || x == 2 => (Borders::TOP, Borders::BOTTOM, Borders::NONE),
-
+        1 | 2 => (Borders::TOP, Borders::BOTTOM, Borders::NONE),
         3 => (
             Borders::TOP | Borders::RIGHT,
             Borders::BOTTOM | Borders::RIGHT,

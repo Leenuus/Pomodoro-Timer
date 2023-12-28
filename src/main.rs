@@ -128,26 +128,29 @@ fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
 // HACK keybindings or button to + or - number input
 fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
     // TODO task manager input fields
+    let ((s1, task_name), (s2, pomodoro_per_long_break), (s3, task_notes)) =
+        app.task_manager_input.display();
     let text = vec![
-        Line::from(vec![Span::styled(
-            "Task Name: ",
-            Style::new().green().italic(),
-        )]),
+        Line::from(vec![
+            Span::styled(s1, Style::new().green().italic()),
+            Span::from(task_name).style(Style::default()),
+        ]),
         Line::default(),
-        Line::from(vec![Span::styled(
-            "Est Pomodoros: ",
-            Style::new().green().italic(),
-        )]),
+        Line::from(vec![
+            Span::styled(s2, Style::new().green().italic()),
+            Span::from(pomodoro_per_long_break).style(Style::default()),
+        ]),
         Line::default(),
-        Line::from(vec![Span::styled(
-            "Notes(optional): ",
-            Style::new().green().italic(),
-        )]),
+        Line::from(vec![
+            Span::styled(s3, Style::new().green().italic()),
+            Span::from(task_notes).style(Style::default()),
+        ]),
+        Line::default(),
     ];
     let b = Paragraph::new(text)
         .block(
             Block::new()
-                .title("Task Manager --> Pomodoro Setting")
+                .title("Task Manager --> Pomodoro Settings")
                 .borders(Borders::ALL)
                 .padding(Padding::default()),
         )
@@ -158,7 +161,7 @@ fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
 
 fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
     let ((s1, timer), (s2, short_break), (s3, long_break), (s4, pomodoro_per_long_break)) =
-        app.display_user_input();
+        app.timer_setting_input.display();
     let text = vec![
         Line::from(vec![
             Span::styled(s1, Style::new().green().italic()),

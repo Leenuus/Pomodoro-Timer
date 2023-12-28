@@ -1,10 +1,7 @@
 #![allow(clippy::single_match)]
 #![allow(clippy::type_complexity)]
 
-use std::{
-    default,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use ratatui::widgets::ListState;
 
@@ -96,10 +93,10 @@ pub struct App {
     pub tab_selected: Tabs,
     // NOTE Tab1: Pomodoro Settings DONE
     pub timer_setting: TimerSetting,
-    timer_setting_input: Input, // NOTE TimerSetting input fields
+    pub timer_setting_input: Input, // NOTE TimerSetting input fields
     pub state_setting: StateSetting,
-    // TODO Tab2: Task Manager
-    task_manager_input: Input, // NOTE TimerSetting input fields
+    // HACK use proc macro to generate input fields receiver struct and implementation
+    pub task_manager_input: Input1, // NOTE TimerSetting input fields
     pub task_list: StatefulList<Task>,
 }
 
@@ -130,7 +127,7 @@ impl Default for App {
                 timer: None,
                 state_setting: StateSetting::default(),
                 state: State::default(),
-                task_manager_input: Input::default(),
+                task_manager_input: Input1::default(),
                 tab_selected: Tabs::default(),
                 task_list,
             }
@@ -141,7 +138,7 @@ impl Default for App {
                 timer: None,
                 state_setting: StateSetting::default(),
                 state: State::default(),
-                task_manager_input: Input::default(),
+                task_manager_input: Input1::default(),
                 tab_selected: Tabs::default(),
                 task_list: StatefulList::default(),
             }
@@ -270,6 +267,70 @@ enum InputField {
     PomodoroPerLongBreak,
 }
 
+#[derive(Debug, Default)]
+pub struct Input1 {
+    task_name: String,
+    task_notes: String,
+    pomodoros_per_task: String,
+    field_selected: InputField1,
+}
+
+impl Input1 {
+    pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str)) {
+        // HACK refactor this bullshit type
+        let (s1, s2, s3) = match self.field_selected {
+            InputField1::TaskName => (">> Task Name: ", "Est Pomodoros: ", "Task Notes:"),
+            InputField1::PomodorosPerTask => ("Task Name: ", ">> Est Pomodoros: ", "Task Notes:"),
+            InputField1::TaskNotes => ("Task Name: ", "Est Pomodoros: ", ">> Task Notes:"),
+        };
+        (
+            (s1, &self.task_name),
+            (s2, &self.pomodoros_per_task),
+            (s3, &self.task_notes),
+        )
+    }
+
+    pub fn get_field_mut(&mut self) -> &mut String {
+        match self.field_selected {
+            InputField1::TaskNotes => &mut self.task_notes,
+            InputField1::PomodorosPerTask => &mut self.pomodoros_per_task,
+            InputField1::TaskName => &mut self.task_name,
+        }
+    }
+
+    pub fn select_prev_field(&mut self) {
+        self.field_selected = self.field_selected.prev_field();
+    }
+    pub fn select_next_field(&mut self) {
+        self.field_selected = self.field_selected.next_field();
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+enum InputField1 {
+    #[default]
+    TaskName,
+    TaskNotes,
+    PomodorosPerTask,
+}
+
+impl InputField1 {
+    pub fn next_field(self) -> Self {
+        match self {
+            InputField1::TaskName => InputField1::PomodorosPerTask,
+            InputField1::PomodorosPerTask => InputField1::TaskNotes,
+            InputField1::TaskNotes => InputField1::TaskName,
+        }
+    }
+    pub fn prev_field(self) -> Self {
+        match self {
+            InputField1::TaskName => InputField1::TaskNotes,
+            InputField1::PomodorosPerTask => InputField1::TaskName,
+            InputField1::TaskNotes => InputField1::PomodorosPerTask,
+        }
+    }
+}
+
 impl InputField {
     pub fn prev_field(self) -> Self {
         match self {
@@ -290,7 +351,7 @@ impl InputField {
 }
 
 impl Input {
-    // TODO refactor this bullshit type
+    // HACK refactor this bullshit type
     pub fn display(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
         let (s1, s2, s3, s4) = match self.field_selected {
             InputField::Timer => (
@@ -366,7 +427,7 @@ impl Default for TimerSetting {
     fn default() -> Self {
         if cfg!(debug_assertions) {
             TimerSetting {
-                timer: Duration::from_secs(3),
+                timer: Duration::from_secs(9),
                 short_break: Duration::from_secs(1),
                 long_break: Duration::from_secs(2),
             }
@@ -390,19 +451,31 @@ impl App {
     }
 
     pub fn select_next_field(&mut self) {
-        self.timer_setting_input.select_next_field();
+        match self.tab_selected {
+            Tabs::TaskManager => self.task_manager_input.select_next_field(),
+            Tabs::PomodoroSetting => self.timer_setting_input.select_next_field(),
+        }
     }
 
     pub fn select_prev_field(&mut self) {
-        self.timer_setting_input.select_prev_field();
+        match self.tab_selected {
+            Tabs::TaskManager => self.task_manager_input.select_prev_field(),
+            Tabs::PomodoroSetting => self.timer_setting_input.select_prev_field(),
+        }
     }
 
     pub fn push_user_input_field(&mut self, c: char) {
-        self.timer_setting_input.get_field_mut().push(c);
+        match self.tab_selected {
+            Tabs::TaskManager => self.task_manager_input.get_field_mut().push(c),
+            Tabs::PomodoroSetting => self.timer_setting_input.get_field_mut().push(c),
+        }
     }
 
     pub fn pop_user_input_field(&mut self) {
-        self.timer_setting_input.get_field_mut().pop();
+        match self.tab_selected {
+            Tabs::TaskManager => self.task_manager_input.get_field_mut().pop(),
+            Tabs::PomodoroSetting => self.timer_setting_input.get_field_mut().pop(),
+        };
     }
 
     pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
@@ -509,7 +582,7 @@ impl App {
                 // it is a thing that when you change this value when the pomodoro loop has
                 // started; the change will apply next loop
                 // because we don't modify the value of self.state to change its behavior
-                // TODO we can let user choose here
+                // HACK we can let user choose here
                 self.state_setting = StateSetting {
                     pomodoro_per_long_break,
                 };
@@ -520,5 +593,19 @@ impl App {
                 self.state_setting = StateSetting::default();
             }
         }
+    }
+
+    pub fn add_task(&mut self) {
+        // TODO more robust add task
+        let task = Task {
+            title: self.task_manager_input.task_name.clone(),
+            notes: self.task_manager_input.task_notes.clone(),
+            pomodoros: self
+                .task_manager_input
+                .pomodoros_per_task
+                .parse()
+                .unwrap_or(1),
+        };
+        self.task_list.items.push(task);
     }
 }

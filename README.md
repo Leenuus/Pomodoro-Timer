@@ -26,6 +26,7 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 - [ ] Different Colors for Different States(default for Pomodoro, `Green` for short break, `Blue` for long break)
 - [ ] Padding for widgets
 - [ ] Wrap and trim in ratatui
+- [ ] Clock Style
 
 ### MultiMedia
 
