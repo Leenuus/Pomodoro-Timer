@@ -1,7 +1,10 @@
 #![allow(clippy::single_match)]
 #![allow(clippy::type_complexity)]
 
-use std::time::{Duration, Instant};
+use std::{
+    default,
+    time::{Duration, Instant},
+};
 
 use ratatui::widgets::ListState;
 
@@ -20,9 +23,16 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
-            state: ListState::default(),
-            items,
+        if items.len() != 0 {
+            StatefulList {
+                state: ListState::default().with_selected(Some(0)),
+                items,
+            }
+        } else {
+            StatefulList {
+                state: ListState::default(),
+                items,
+            }
         }
     }
 
@@ -79,17 +89,34 @@ impl Default for State {
 
 #[derive(Debug)]
 pub struct App {
-    // this field to store user settings
-    pub timer_setting: TimerSetting,
-    // this field is for echoing user input
-    user_input: Input,
-    // Running timer
+    // The Actual timer, None if timer is not running
     timer: Option<Timer>,
-    pub state_setting: StateSetting,
+    // NOTE pomodoro current loop state
     pub state: State,
-    // this field let user choose tabs
-    pub tab_selected: usize,
+    pub tab_selected: Tabs,
+    // NOTE Tab1: Pomodoro Settings DONE
+    pub timer_setting: TimerSetting,
+    timer_setting_input: Input, // NOTE TimerSetting input fields
+    pub state_setting: StateSetting,
+    // TODO Tab2: Task Manager
+    task_manager_input: Input, // NOTE TimerSetting input fields
     pub task_list: StatefulList<Task>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum Tabs {
+    #[default]
+    PomodoroSetting,
+    TaskManager,
+}
+
+impl Tabs {
+    pub fn toggle(self) -> Self {
+        match self {
+            Tabs::TaskManager => Tabs::PomodoroSetting,
+            Tabs::PomodoroSetting => Tabs::TaskManager,
+        }
+    }
 }
 
 impl Default for App {
@@ -99,21 +126,23 @@ impl Default for App {
             let task_list = StatefulList::with_items(task_list);
             App {
                 timer_setting: TimerSetting::default(),
-                user_input: Input::default(),
+                timer_setting_input: Input::default(),
                 timer: None,
                 state_setting: StateSetting::default(),
                 state: State::default(),
-                tab_selected: 0,
+                task_manager_input: Input::default(),
+                tab_selected: Tabs::default(),
                 task_list,
             }
         } else {
             App {
                 timer_setting: TimerSetting::default(),
-                user_input: Input::default(),
+                timer_setting_input: Input::default(),
                 timer: None,
                 state_setting: StateSetting::default(),
                 state: State::default(),
-                tab_selected: 0,
+                task_manager_input: Input::default(),
+                tab_selected: Tabs::default(),
                 task_list: StatefulList::default(),
             }
         }
@@ -222,6 +251,8 @@ impl Timer {
     }
 }
 
+/// HACK generate corresponding input fields from settings needed
+/// HACK Stateful List Like implementation
 #[derive(Debug)]
 pub struct Input {
     timer: String,
@@ -351,35 +382,31 @@ impl Default for TimerSetting {
 
 impl App {
     pub fn tab_toggle(&mut self) {
-        match self.tab_selected {
-            0 => self.tab_selected = 1,
-            1 => self.tab_selected = 0,
-            _ => panic!("Not implemented Tab"),
-        }
+        self.tab_selected = self.tab_selected.toggle();
     }
 
     pub fn clear_input_field(&mut self) {
-        self.user_input.get_field_mut().clear();
+        self.timer_setting_input.get_field_mut().clear();
     }
 
     pub fn select_next_field(&mut self) {
-        self.user_input.select_next_field();
+        self.timer_setting_input.select_next_field();
     }
 
     pub fn select_prev_field(&mut self) {
-        self.user_input.select_prev_field();
+        self.timer_setting_input.select_prev_field();
     }
 
     pub fn push_user_input_field(&mut self, c: char) {
-        self.user_input.get_field_mut().push(c);
+        self.timer_setting_input.get_field_mut().push(c);
     }
 
     pub fn pop_user_input_field(&mut self) {
-        self.user_input.get_field_mut().pop();
+        self.timer_setting_input.get_field_mut().pop();
     }
 
     pub fn display_user_input(&self) -> ((&str, &str), (&str, &str), (&str, &str), (&str, &str)) {
-        self.user_input.display()
+        self.timer_setting_input.display()
     }
 
     pub fn abort_timer(&mut self) {
@@ -466,10 +493,12 @@ impl App {
     // FIXME tell user not to set a timer more than 100 minutes
     pub fn set_timer(&mut self) {
         match (
-            self.user_input.timer.parse::<u64>(),
-            self.user_input.short_break.parse::<u64>(),
-            self.user_input.long_break.parse::<u64>(),
-            self.user_input.pomodoro_per_long_break.parse::<u64>(),
+            self.timer_setting_input.timer.parse::<u64>(),
+            self.timer_setting_input.short_break.parse::<u64>(),
+            self.timer_setting_input.long_break.parse::<u64>(),
+            self.timer_setting_input
+                .pomodoro_per_long_break
+                .parse::<u64>(),
         ) {
             (Ok(timer), Ok(short_break), Ok(long_break), Ok(pomodoro_per_long_break)) => {
                 self.timer_setting = TimerSetting {
@@ -486,7 +515,7 @@ impl App {
                 };
             }
             _ => {
-                self.user_input = Input::default();
+                self.timer_setting_input = Input::default();
                 self.timer_setting = TimerSetting::default();
                 self.state_setting = StateSetting::default();
             }

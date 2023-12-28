@@ -59,12 +59,23 @@ fn ui(frame: &mut Frame, app: &mut App) {
 
 fn render_task_list(frame: &mut Frame, area: Rect, app: &mut App) {
     let list = List::new(app.task_list.items.iter().map(|t| t.title()))
-        .block(Block::default().title("Task List").borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title("Task List")
+                .borders(Borders::ALL)
+                .title_position(block::Position::Top)
+                .title_alignment(Alignment::Center),
+        )
         .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-        .highlight_symbol(">>")
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::ITALIC)
+                .bg(Color::Red)
+                .fg(Color::Green),
+        )
+        .highlight_symbol(">> ")
         .repeat_highlight_symbol(true)
-        .direction(ListDirection::BottomToTop);
+        .direction(ListDirection::TopToBottom);
 
     frame.render_stateful_widget(list, area, &mut app.task_list.state);
 }
@@ -109,21 +120,39 @@ fn render_state_prompt(frame: &mut Frame, area: Rect) {
 
 fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
     match app.tab_selected {
-        0 => render_settings(frame, area, app),
-        1 => render_task_manager(frame, area, app),
-        _ => panic!("Tab selected index, not implemented"),
+        app::Tabs::PomodoroSetting => render_settings(frame, area, app),
+        app::Tabs::TaskManager => render_task_manager(frame, area, app),
     };
 }
 
+// HACK keybindings or button to + or - number input
 fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
-    // TODO input field
-    // TODO task name
-    let b = Block::default()
-        .title(app.tab_selected.to_string())
-        .borders(Borders::LEFT | Borders::RIGHT)
-        .border_style(Style::default().fg(Color::White))
-        .border_type(BorderType::Rounded)
-        .style(Style::default().bg(Color::Black));
+    // TODO task manager input fields
+    let text = vec![
+        Line::from(vec![Span::styled(
+            "Task Name: ",
+            Style::new().green().italic(),
+        )]),
+        Line::default(),
+        Line::from(vec![Span::styled(
+            "Est Pomodoros: ",
+            Style::new().green().italic(),
+        )]),
+        Line::default(),
+        Line::from(vec![Span::styled(
+            "Notes(optional): ",
+            Style::new().green().italic(),
+        )]),
+    ];
+    let b = Paragraph::new(text)
+        .block(
+            Block::new()
+                .title("Task Manager --> Pomodoro Setting")
+                .borders(Borders::ALL)
+                .padding(Padding::default()),
+        )
+        .style(Style::default())
+        .alignment(Alignment::Left);
     frame.render_widget(b, area);
 }
 
@@ -157,7 +186,7 @@ fn render_settings(frame: &mut Frame, area: Rect, app: &App) {
     let b = Paragraph::new(text)
         .block(
             Block::new()
-                .title("Settings")
+                .title("Pomodoro Settings --> Task Manager")
                 .borders(Borders::ALL)
                 .padding(Padding::default()),
         )
