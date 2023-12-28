@@ -2,6 +2,9 @@
 
 A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/crates/ratatui) and [`crossterm`](https://crates.io/crates/crossterm)
 
+[Inspired by pomofocus.io](https://pomofocus.io/)
+
+![](resources/pomorodo-design-reference.png)
 
 ## Progress
 
@@ -11,8 +14,10 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 - [X] Timer Controller(Start, Pause, Skip, Break, Long Break), 12/27
 - [X] Task Manager and Task List
     - [X] Add Task, 12/28
-    - [X]task specific settings, 12/28
-    - [X] delete Tasks
+    - [X] task specific settings, 12/28
+    - [X] delete Tasks, 12/28
+![milestone0](./resources/pomodoro-milestone0.png)
+![milestone1](./resources/pomodoro-milestone1.png)
 - [ ] Vim-like Keybindings; Dynamic Keybindings
 - [ ] Help page
 - [ ] Usage prompt; State prompt

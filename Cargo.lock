@@ -191,6 +191,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
+name = "pomodoro"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "ratatui",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -206,14 +214,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
-]
-
-[[package]]
-name = "rata"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "ratatui",
 ]
 
 [[package]]
