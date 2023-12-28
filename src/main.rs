@@ -4,6 +4,9 @@ use std::{
     time::Duration,
 };
 
+#[macro_use]
+extern crate lazy_static;
+
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
@@ -16,6 +19,8 @@ mod app;
 use crate::app::*;
 mod input;
 use crate::input::handle_events;
+mod keybindings;
+use keybindings::KEYBINDINGS;
 
 const FPS: u64 = 30;
 
@@ -37,7 +42,7 @@ fn main() -> io::Result<()> {
 
     while !should_quit {
         terminal.draw(|frame| ui(frame, &mut app))?;
-        should_quit = handle_events(&mut app)?;
+        should_quit = handle_events(&mut app, &KEYBINDINGS)?;
         sleep(Duration::from_millis(interval));
         app.update();
     }
@@ -58,14 +63,20 @@ fn ui(frame: &mut Frame, app: &mut App) {
 }
 
 fn render_task_list(frame: &mut Frame, area: Rect, app: &mut App) {
-    let texts: Vec<String> = app.task_list.items.iter().map(|t| format!("{} 0/{}", t.title(), t.pomodoros)).collect();
+    let texts: Vec<String> = app
+        .task_list
+        .items
+        .iter()
+        .map(|t| format!("{} 0/{}", t.title(), t.pomodoros))
+        .collect();
     let list = List::new(texts)
         .block(
             Block::default()
                 .title("Task List")
                 .borders(Borders::ALL)
                 .title_position(block::Position::Top)
-                .title_alignment(Alignment::Center).padding(Padding::vertical(1))
+                .title_alignment(Alignment::Center)
+                .padding(Padding::vertical(1)),
         )
         .style(Style::default().fg(Color::White))
         .highlight_style(
@@ -126,9 +137,7 @@ fn render_user_input_fields(frame: &mut Frame, area: Rect, app: &App) {
     };
 }
 
-// HACK keybindings or button to + or - number input
 fn render_task_manager(frame: &mut Frame, area: Rect, app: &App) {
-    // TODO task manager input fields
     let ((s1, task_name), (s2, pomodoro_per_long_break), (s3, task_notes)) =
         app.task_manager_input.display();
     let text = vec![

@@ -12,6 +12,9 @@ const LONG_BREAK_LENGTH: u64 = 15;
 const DEFAULT_POMODORO_PER_LONG_BREAK: u64 = 4;
 const DEFAULT_POMODORO_PER_TASK: u64 = 1;
 
+pub type AppAction = fn(&mut App);
+
+
 #[derive(Debug, Default)]
 pub struct StatefulList<T> {
     pub state: ListState,
