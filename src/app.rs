@@ -6,14 +6,13 @@ use std::time::{Duration, Instant};
 use ratatui::widgets::ListState;
 
 const SECS_PER_MINUTE: u64 = 60;
-const POMODORO_LENGTH: u64 = 25;
-const SHORT_BREAK_LENGTH: u64 = 5;
-const LONG_BREAK_LENGTH: u64 = 15;
+const DEFAULT_POMODORO_LENGTH: u64 = 25;
+const DEFAULT_SHORT_BREAK_LENGTH: u64 = 5;
+const DEFAULT_LONG_BREAK_LENGTH: u64 = 15;
 const DEFAULT_POMODORO_PER_LONG_BREAK: u64 = 4;
 const DEFAULT_POMODORO_PER_TASK: u64 = 1;
 
 pub type AppAction = fn(&mut App);
-
 
 #[derive(Debug, Default)]
 pub struct StatefulList<T> {
@@ -102,6 +101,14 @@ pub struct App {
     pub task_manager_input: Input1, // NOTE TimerSetting input fields
     pub task_list: StatefulList<Task>,
     pub should_quit: bool,
+    pub page_selected: Page,
+}
+
+#[derive(Default, Debug)]
+pub enum Page {
+    Help,
+    #[default]
+    Normal,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -123,17 +130,17 @@ impl Tabs {
 impl Default for App {
     fn default() -> Self {
         if cfg!(debug_assertions) {
-            let task1 = Task{
+            let task1 = Task {
                 title: "Pomodoro Timer Dev".to_string(),
                 notes: String::new(),
-                pomodoros: 2
+                pomodoros: 2,
             };
-            let task2 = Task{
+            let task2 = Task {
                 title: "Renpy GalGame Dev".to_string(),
                 notes: String::new(),
-                pomodoros: 2
+                pomodoros: 2,
             };
-            let task_list = vec![Task::default(), task1, task2 ];
+            let task_list = vec![Task::default(), task1, task2];
             let task_list = StatefulList::with_items(task_list);
             App {
                 timer_setting: TimerSetting::default(),
@@ -145,6 +152,7 @@ impl Default for App {
                 tab_selected: Tabs::default(),
                 task_list,
                 should_quit: false,
+                page_selected: Page::default(),
             }
         } else {
             App {
@@ -157,6 +165,7 @@ impl Default for App {
                 tab_selected: Tabs::default(),
                 task_list: StatefulList::default(),
                 should_quit: false,
+                page_selected: Page::default(),
             }
         }
     }
@@ -423,9 +432,9 @@ impl Input {
 impl Default for Input {
     fn default() -> Self {
         Self {
-            timer: POMODORO_LENGTH.to_string(),
-            short_break: SHORT_BREAK_LENGTH.to_string(),
-            long_break: LONG_BREAK_LENGTH.to_string(),
+            timer: DEFAULT_POMODORO_LENGTH.to_string(),
+            short_break: DEFAULT_SHORT_BREAK_LENGTH.to_string(),
+            long_break: DEFAULT_LONG_BREAK_LENGTH.to_string(),
             pomodoro_per_long_break: DEFAULT_POMODORO_PER_LONG_BREAK.to_string(),
             field_selected: InputField::Timer,
         }
@@ -449,9 +458,9 @@ impl Default for TimerSetting {
             }
         } else {
             TimerSetting {
-                timer: Duration::from_secs(SECS_PER_MINUTE * POMODORO_LENGTH),
-                short_break: Duration::from_secs(SECS_PER_MINUTE * SHORT_BREAK_LENGTH),
-                long_break: Duration::from_secs(SECS_PER_MINUTE * LONG_BREAK_LENGTH),
+                timer: Duration::from_secs(SECS_PER_MINUTE * DEFAULT_POMODORO_LENGTH),
+                short_break: Duration::from_secs(SECS_PER_MINUTE * DEFAULT_SHORT_BREAK_LENGTH),
+                long_break: Duration::from_secs(SECS_PER_MINUTE * DEFAULT_LONG_BREAK_LENGTH),
             }
         }
     }
@@ -463,7 +472,7 @@ impl App {
     }
 
     pub fn clear_input_field(&mut self) {
-        match self.tab_selected{
+        match self.tab_selected {
             Tabs::TaskManager => self.task_manager_input.get_field_mut().clear(),
             Tabs::PomodoroSetting => self.timer_setting_input.get_field_mut().clear(),
         }
@@ -579,7 +588,6 @@ impl App {
         }
     }
 
-    // FIXME tell user not to set a timer more than 100 minutes
     pub fn set_timer(&mut self) {
         match (
             self.timer_setting_input.timer.parse::<u64>(),
@@ -589,16 +597,19 @@ impl App {
                 .pomodoro_per_long_break
                 .parse::<u64>(),
         ) {
-            (Ok(timer), Ok(short_break), Ok(long_break), Ok(pomodoro_per_long_break)) => {
+            (Ok(mut timer), Ok(mut short_break), Ok(mut long_break), Ok(pomodoro_per_long_break)) => {
+                timer = if timer < 100 { timer }  else { DEFAULT_POMODORO_LENGTH };
+                short_break = if short_break < 100 { short_break }  else { DEFAULT_SHORT_BREAK_LENGTH };
+                long_break = if long_break < 100 { long_break }  else { DEFAULT_LONG_BREAK_LENGTH };
                 self.timer_setting = TimerSetting {
                     timer: Duration::from_secs(timer * SECS_PER_MINUTE),
                     short_break: Duration::from_secs(short_break * SECS_PER_MINUTE),
                     long_break: Duration::from_secs(long_break * SECS_PER_MINUTE),
                 };
+                // HACK we can let user choose here
                 // it is a thing that when you change this value when the pomodoro loop has
                 // started; the change will apply next loop
                 // because we don't modify the value of self.state to change its behavior
-                // HACK we can let user choose here
                 self.state_setting = StateSetting {
                     pomodoro_per_long_break,
                 };
@@ -636,7 +647,14 @@ impl App {
         };
     }
 
-    pub fn quit(&mut self){
-        self.should_quit = true;
+    pub fn quit(&mut self) {
+        match self.page_selected {
+            Page::Help => self.page_selected = Page::default(),
+            Page::Normal => self.should_quit = true,
+        }
+    }
+
+    pub fn open_help(&mut self) {
+        self.page_selected = Page::Help;
     }
 }

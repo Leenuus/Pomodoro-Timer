@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::App;
 use ratatui::{prelude::*, widgets::*};
 
@@ -67,15 +65,17 @@ pub fn time_convert(secs: u64) -> (&'static str, &'static str, &'static str, &'s
     let minutes = secs / 60;
     let secs = secs % 60;
 
+    // NOTE it is not a good idea to set a timer more than 99 minutes
+    // we make sure this function never receive a three-digit number
+    // in `crate::App::set_timer`
     let (m0, m1) = match minutes {
-        // FIXME user input greater than 100
         x if x < 100 => (get_digit(x / 10), get_digit(x % 10)),
-        _ => panic!(),
+        _ => unreachable!()
     };
 
     let (s0, s1) = match secs {
         x if x < 60 => (get_digit(x / 10), get_digit(x % 10)),
-        _ => panic!(),
+        _ => unreachable!()
     };
     (m0, m1, s0, s1)
 }
@@ -111,6 +111,7 @@ pub fn render_digit(num: &str, border: Borders) -> Paragraph<'_> {
     res
 }
 
+// width: 129, height: 33
 pub fn render_digit_clock(frame: &mut Frame, area: Rect, app: &App) {
     let layout = Layout::new(
         Direction::Horizontal,
@@ -149,7 +150,7 @@ pub fn render_clock_digit(frame: &mut Frame, layout: Rect, digit: &str, index: u
             Borders::RIGHT,
         ),
         _ => {
-            panic!()
+            unreachable!()
         }
     };
 

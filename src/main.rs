@@ -20,7 +20,7 @@ use crate::app::*;
 mod input;
 use crate::input::handle_events;
 mod keybindings;
-use keybindings::{TIMER_SETTING_KEYBINDINGS, TASK_MANAGER_KEYBINDINGS};
+use keybindings::{KEYBINDINGS_HELP_MESSAGE, TASK_MANAGER_KEYBINDINGS, TIMER_SETTING_KEYBINDINGS};
 
 const FPS: u64 = 30;
 
@@ -28,8 +28,13 @@ fn main() -> io::Result<()> {
     let mut args = std::env::args();
     let _program = args.next().unwrap();
     let fps = match args.next() {
-        // TODO fix strange Rust error type conversion
-        Some(fps) => fps.parse::<u64>().expect("Invalid FPS"),
+        Some(fps) => {
+            if let Ok(fps) = fps.parse::<u64>() {
+                fps
+            } else {
+                FPS
+            }
+        }
         None => FPS,
     };
     enable_raw_mode()?;
@@ -37,11 +42,15 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
     let interval: u64 = 1000 / fps;
 
-    let mut app = App::default(); // initialize App
+    let mut app = App::default();
 
     while !app.should_quit {
         terminal.draw(|frame| ui(frame, &mut app))?;
-        handle_events(&mut app, &TIMER_SETTING_KEYBINDINGS, &TASK_MANAGER_KEYBINDINGS)?;
+        handle_events(
+            &mut app,
+            &TIMER_SETTING_KEYBINDINGS,
+            &TASK_MANAGER_KEYBINDINGS,
+        )?;
         sleep(Duration::from_millis(interval));
         app.update();
     }
@@ -52,13 +61,20 @@ fn main() -> io::Result<()> {
 }
 
 fn ui(frame: &mut Frame, app: &mut App) {
-    let layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Ratio(1, 4), Constraint::Ratio(3, 4)],
-    )
-    .split(frame.size());
-    render_task_list(frame, layout[0], app);
-    render_right_side(frame, layout[1], app);
+    match app.page_selected {
+        Page::Normal => {
+            let layout = Layout::new(
+                Direction::Horizontal,
+                [Constraint::Ratio(1, 4), Constraint::Ratio(3, 4)],
+            )
+            .split(frame.size());
+            render_task_list(frame, layout[0], app);
+            render_right_side(frame, layout[1], app);
+        }
+        Page::Help => {
+            render_help_screen(frame, frame.size(), &app);
+        }
+    }
 }
 
 fn render_task_list(frame: &mut Frame, area: Rect, app: &mut App) {
@@ -115,13 +131,29 @@ fn render_console(frame: &mut Frame, area: Rect, app: &App) {
 }
 
 #[allow(unused)]
-fn render_help_screen(frame: &mut Frame, area: Rect) {
-    // TODO we can generate help from keymap
-    todo!()
+fn render_help_screen(frame: &mut Frame, area: Rect, app: &App) {
+    let keys_to_help: Vec<String> = TIMER_SETTING_KEYBINDINGS
+        .iter()
+        .filter_map(|(key_event, f)| match KEYBINDINGS_HELP_MESSAGE.get(&f) {
+            None => None,
+            // TODO pretty print key name help message
+            Some(help_msg) => Some(format!("{:?}: {}", key_event, help_msg)),
+        })
+        .collect();
+    let text: Vec<Line<'_>> = keys_to_help
+        .iter()
+        .map(|s| Line::from(vec![Span::raw(s)]))
+        .collect();
+    let p = Paragraph::new(text)
+        .block(Block::new().title("Paragraph").borders(Borders::ALL))
+        .style(Style::default())
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    frame.render_widget(p, area);
 }
 
 fn render_state_prompt(frame: &mut Frame, area: Rect) {
-    // TODO usage prompt widget: render it with dynamic keymaps
+    // TODO state prompt with useful information
     let d1 = Block::default()
         .title("Usage")
         .borders(Borders::ALL)

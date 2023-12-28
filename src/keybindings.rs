@@ -29,6 +29,8 @@ const ADD_TASK: AppAction = App::add_task;
 // TODO Task Manager Mode Keymap
 const DELETE_TASK: AppAction = App::delete_task;
 
+const OPEN_HELP: AppAction = App::open_help;
+
 const QUIT_APP: AppAction = App::quit;
 
 lazy_static! {
@@ -96,7 +98,7 @@ lazy_static! {
     // abort timer
         m.insert(
             KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
-            ABORT_TIMER,
+            QUIT_APP,
         );
     // toggle timer state
         m.insert(
@@ -115,7 +117,11 @@ lazy_static! {
         );
     // change pomodoro timer settings
         m.insert(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), SET_TIMER);
-
+    // open help
+        m.insert(
+            KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE),
+            OPEN_HELP,
+        );
         m
     };
 
@@ -159,6 +165,36 @@ lazy_static! {
             POP_USER_INPUT_FIELD,
         );
         m.insert(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), ADD_TASK);
+        m
+    };
+    // TODO generate Keybindings Help from this static Hashmap
+    pub static ref KEYBINDINGS_HELP_MESSAGE: HashMap<AppAction, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert(TAB_TOGGLE, "Switch to next Tab");
+
+        m.insert(CLEAR_INPUT_FIELD, "Clear current input field");
+
+        m.insert(SELECT_NEXT_FIELD, "Select next input field");
+
+        m.insert(SELECT_PREV_FIELD, "Select previous input field");
+
+        m.insert(POP_USER_INPUT_FIELD, "Delete the last character in input field");
+
+        m.insert(ABORT_TIMER, "Skip timer and go to next stage");
+
+        m.insert(TOGGLE_TIMER, "Launch or Pause the timer");
+
+        m.insert(PAUSE_TIMER, "Pause the timer");
+
+        m.insert(LAUNCH_TIMER, "Launch the timer");
+
+        m.insert(SET_TIMER, "Confirm and change current timer setting");
+
+        m.insert(ADD_TASK, "Confirm and add task to task list");
+
+        m.insert(DELETE_TASK, "Delete current selected task");
+
+        m.insert(OPEN_HELP, "Open this help page");
         m
     };
 }
