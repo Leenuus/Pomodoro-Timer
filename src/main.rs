@@ -21,6 +21,7 @@ mod input;
 use crate::input::handle_events;
 mod keybindings;
 use keybindings::{KEYBINDINGS_HELP_MESSAGE, TASK_MANAGER_KEYBINDINGS, TIMER_SETTING_KEYBINDINGS};
+mod custom_widgets;
 
 const FPS: u64 = 30;
 

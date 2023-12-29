@@ -18,7 +18,9 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
     - [X] delete Tasks, 12/28
 ![milestone0](./resources/pomodoro-milestone0.png)
 ![milestone1](./resources/pomodoro-milestone1.png)
-- [ ] Vim-like Keybindings; Dynamic Keybindings
+- [ ] Vim-like Keybindings; 
+    - [X] Dynamic Keybindings
+    - [ ] Vim mode
 - [ ] Help page
 - [ ] Usage prompt; State prompt
 - [ ] Timer Presets 
