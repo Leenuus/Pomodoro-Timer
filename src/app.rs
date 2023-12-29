@@ -2,6 +2,9 @@
 #![allow(clippy::type_complexity)]
 
 use std::time::{Duration, Instant};
+use std::process::{Command as cmd, Stdio};
+
+use crossterm::Command;
 
 use crate::custom_widgets::StatefulList;
 
@@ -516,6 +519,11 @@ impl App {
                     }
                 }
                 // When time is up, we set timer back to None
+                // HACK better notification send
+                let _cmd = cmd::new("notify-send")
+                    .arg("Time is up")
+                    .stdout(Stdio::null())
+                    .status();
                 self.timer = None;
             } else {
                 timer.update();
