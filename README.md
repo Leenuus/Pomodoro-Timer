@@ -24,6 +24,7 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 - [ ] Help page
 - [ ] Usage prompt; State prompt
 - [ ] Timer Presets 
+- [ ] App log system
 - [ ] Stop Watch
 - [ ] Store User Settings and Data
 - [ ] Backup and restore user's `settings` and `data`
@@ -37,8 +38,8 @@ A simple Pomodoro Timer implemented in Rust with [`rata-tui`](https://crates.io/
 
 ### MultiMedia
 
-- [ ] Talk to `PulseAudio` to play sound
-- [ ] Talk to `Dbus` to send notifications
+- [X] Talk to `PulseAudio` to play sound
+- [X] Talk to `Dbus` to send notifications 12/29
 
 ### Advanced Features
 

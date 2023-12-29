@@ -1,11 +1,14 @@
 #![allow(clippy::single_match)]
 #![allow(clippy::type_complexity)]
 
-use std::time::{Duration, Instant};
-use std::process::{Command as cmd, Stdio};
 use notify_rust::Notification;
+use std::time::{Duration, Instant};
 
 use crate::custom_widgets::StatefulList;
+use psimple::Simple;
+use pulse::sample::{Format, Spec};
+use pulse::stream::Direction;
+use std::fs::read;
 
 const SECS_PER_MINUTE: u64 = 60;
 const DEFAULT_POMODORO_LENGTH: u64 = 25;
@@ -15,7 +18,6 @@ const DEFAULT_POMODORO_PER_LONG_BREAK: u64 = 4;
 const DEFAULT_POMODORO_PER_TASK: u64 = 1;
 
 pub type AppAction = fn(&mut App);
-
 
 #[derive(Debug)]
 pub enum State {
@@ -517,10 +519,39 @@ impl App {
                         self.state = State::Pomodoro(self.state_setting.pomodoro_per_long_break)
                     }
                 }
+
+                // HACK more reasonable ringtone playback
+                let spec = Spec {
+                    format: Format::S16NE,
+                    channels: 2,
+                    rate: 44100,
+                };
+                assert!(spec.is_valid());
+
+                let s = Simple::new(
+                    None,                // Use the default server
+                    "Pomodoro",            // Our application’s name
+                    Direction::Playback, // We want a playback stream
+                    None,                // Use the default device
+                    "Music",             // Description of our stream
+                    &spec,               // Our sample format
+                    None,                // Use default channel map
+                    None,                // Use default buffering attributes
+                )
+                .unwrap();
+                let buf = read("./resources/achivement-bell.wav").unwrap();
+                // HACK log if fail
+                let _res = s.write(&buf);
+
                 // HACK notification aware of current state
                 let title = "Pomodoro";
                 let body = "Time is up, let's prepare next timer";
-                let notification = Notification::new().appname(title).body(body).summary("Pomodoro Tips").finalize();
+                let notification = Notification::new()
+                    .appname(title)
+                    .body(body)
+                    .summary("Pomodoro Tips")
+                    .finalize();
+                // HACK log if fail
                 let _res = notification.show();
                 // NOTE When time is up, we set timer back to None, meaning there is no timer up
                 // currently
@@ -551,10 +582,27 @@ impl App {
                 .pomodoro_per_long_break
                 .parse::<u64>(),
         ) {
-            (Ok(mut timer), Ok(mut short_break), Ok(mut long_break), Ok(pomodoro_per_long_break)) => {
-                timer = if timer < 100 { timer }  else { DEFAULT_POMODORO_LENGTH };
-                short_break = if short_break < 100 { short_break }  else { DEFAULT_SHORT_BREAK_LENGTH };
-                long_break = if long_break < 100 { long_break }  else { DEFAULT_LONG_BREAK_LENGTH };
+            (
+                Ok(mut timer),
+                Ok(mut short_break),
+                Ok(mut long_break),
+                Ok(pomodoro_per_long_break),
+            ) => {
+                timer = if timer < 100 {
+                    timer
+                } else {
+                    DEFAULT_POMODORO_LENGTH
+                };
+                short_break = if short_break < 100 {
+                    short_break
+                } else {
+                    DEFAULT_SHORT_BREAK_LENGTH
+                };
+                long_break = if long_break < 100 {
+                    long_break
+                } else {
+                    DEFAULT_LONG_BREAK_LENGTH
+                };
                 self.timer_setting = TimerSetting {
                     timer: Duration::from_secs(timer * SECS_PER_MINUTE),
                     short_break: Duration::from_secs(short_break * SECS_PER_MINUTE),
