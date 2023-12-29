@@ -4,8 +4,6 @@
 use std::time::{Duration, Instant};
 use std::process::{Command as cmd, Stdio};
 
-use crossterm::Command;
-
 use crate::custom_widgets::StatefulList;
 
 const SECS_PER_MINUTE: u64 = 60;
@@ -518,12 +516,13 @@ impl App {
                         self.state = State::Pomodoro(self.state_setting.pomodoro_per_long_break)
                     }
                 }
-                // When time is up, we set timer back to None
                 // HACK better notification send
                 let _cmd = cmd::new("notify-send")
                     .arg("Time is up")
                     .stdout(Stdio::null())
                     .status();
+                // NOTE When time is up, we set timer back to None, meaning there is no timer up
+                // currently
                 self.timer = None;
             } else {
                 timer.update();
