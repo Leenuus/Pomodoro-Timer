@@ -3,6 +3,7 @@
 
 use std::time::{Duration, Instant};
 use std::process::{Command as cmd, Stdio};
+use notify_rust::Notification;
 
 use crate::custom_widgets::StatefulList;
 
@@ -516,11 +517,11 @@ impl App {
                         self.state = State::Pomodoro(self.state_setting.pomodoro_per_long_break)
                     }
                 }
-                // HACK better notification send
-                let _cmd = cmd::new("notify-send")
-                    .arg("Time is up")
-                    .stdout(Stdio::null())
-                    .status();
+                // HACK notification aware of current state
+                let title = "Pomodoro";
+                let body = "Time is up, let's prepare next timer";
+                let notification = Notification::new().appname(title).body(body).summary("Pomodoro Tips").finalize();
+                let _res = notification.show();
                 // NOTE When time is up, we set timer back to None, meaning there is no timer up
                 // currently
                 self.timer = None;
